@@ -1,1 +1,4 @@
+test
+*.csv
+settings.json
 __pycache__
