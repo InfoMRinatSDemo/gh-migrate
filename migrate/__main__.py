@@ -1,11 +1,11 @@
 import click
-from . import commands
+from .commands.diff import diff
 
 @click.group()
 def cli():
     pass
 
-cli.add_command(commands.diff)
+cli.add_command(diff)
 
 if __name__ == "__main__":
     cli()
