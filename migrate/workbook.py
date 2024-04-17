@@ -85,7 +85,7 @@ def write_table(worksheet, df, table_name, heading=""):
 
 def add_inventory_worksheet(workbook, stats):
     """ """
-    desired_index = workbook.sheetnames.index("Summary") + 1
+    desired_index = workbook.sheetnames.index("Cover") + 1
     worksheet = add_sheet(workbook, "Inventory", desired_index, "002060")
 
     # Clear the contents of the worksheet
@@ -97,7 +97,7 @@ def add_inventory_worksheet(workbook, stats):
 def add_pre_migration_report(workbook, stats):
     """ """
 
-    desired_index = workbook.sheetnames.index("Summary") + 1
+    desired_index = workbook.sheetnames.index("Cover") + 1
     worksheet = add_sheet(workbook, "Pre-migration report", desired_index, "215C98")
 
     # Clear the contents of the worksheet

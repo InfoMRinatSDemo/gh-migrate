@@ -7,15 +7,12 @@ from ..workbook import add_inventory_worksheet, add_pre_migration_report
 
 
 @click.command()
-@click.argument("org-name", required=True)
 @click.argument("before-source", required=True)
-def plan(org_name, before_source):
-    ##########################################################################
-    # Main function
-    ##########################################################################
-    print(f"*** Generating reports for {org_name}")
+def plan(before_source):
+    print(f"*** Initializing migration workbook")
 
     workbook = load_workbook(os.path.join("report", "template", "workbook.xlsx"))
+
     # Read in initial source stats csv
     stats = pd.read_csv(
         before_source,
