@@ -236,6 +236,15 @@ def get_rest_api_stats(github: GitHub, repo: dict):
     repo["topics"] = response.json()["names"]
 
     ############################################################
+    # Get branches
+    ############################################################
+    response = github.rest.repos.list_branches(org_name, repo_name)
+    if len(response.json()) == 0:
+        repo["branches"] = None
+    else:
+        repo["branches"] = [branch["name"] for branch in response.json()]
+
+    ############################################################
     # Check if GitLFS being used by checking .gitattributes
     ############################################################
     try:
