@@ -237,6 +237,17 @@ def get_rest_api_stats(github: GitHub, repo: dict):
         repo["branches"] = None
     else:
         repo["branches"] = [branch["name"] for branch in response.json()]
+        repo["branches"].sort()
+
+    ############################################################
+    # Get teams
+    ############################################################
+    response = github.rest.repos.list_teams(org_name, repo_name)
+    if len(response.json()) == 0:
+        repo["teams"] = None
+    else:
+        repo["teams"] = [team["name"] for team in response.json()]
+        repo["teams"].sort()
 
     ############################################################
     # Get environments
@@ -266,7 +277,7 @@ def get_rest_api_stats(github: GitHub, repo: dict):
     # Get repository topics, perms, visibility, security
     ############################################################
     response = github.rest.repos.get(org_name, repo_name)
-    repo["topics"] = response.json()["topics"]
+    repo["topics"] = response.json()["topics"].sort()
     repo["permissions"] = response.json()["permissions"]
     repo["visibility"] = response.json()["visibility"]
     repo["security_and_analysis"] = response.json()["security_and_analysis"]
