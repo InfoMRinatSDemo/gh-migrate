@@ -3,3 +3,4 @@ test
 settings.json
 __pycache__
 report/*.xlsx
+logs
