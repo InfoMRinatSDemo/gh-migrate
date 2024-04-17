@@ -218,7 +218,7 @@ def get_rest_api_stats(github: GitHub, repo: dict):
     # Get workflows count
     ############################################################
     response = github.rest.actions.list_repo_workflows(org_name, repo_name)
-    repo["workflows"] = {"totalCount": len(response.json())}
+    repo["workflows"] = {"totalCount": response.json()["total_count"]}
 
     ############################################################
     # Get last workflow run
