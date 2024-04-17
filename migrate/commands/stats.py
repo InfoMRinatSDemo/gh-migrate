@@ -230,12 +230,6 @@ def get_rest_api_stats(github: GitHub, repo: dict):
         repo["lastWorkflowRun"] = response.json()["workflow_runs"][0]["created_at"]
 
     ############################################################
-    # Get repository topics
-    ############################################################
-    response = github.rest.repos.get_all_topics(org_name, repo_name)
-    repo["topics"] = response.json()["names"]
-
-    ############################################################
     # Get branches
     ############################################################
     response = github.rest.repos.list_branches(org_name, repo_name)
@@ -243,6 +237,39 @@ def get_rest_api_stats(github: GitHub, repo: dict):
         repo["branches"] = None
     else:
         repo["branches"] = [branch["name"] for branch in response.json()]
+
+    ############################################################
+    # Get environments
+    ############################################################
+    response = github.rest.repos.get_all_environments(org_name, repo_name)
+    repo["environments"] = response.json()["total_count"]
+
+    ############################################################
+    # Get secrets
+    ############################################################
+    response = github.rest.actions.list_repo_secrets(org_name, repo_name)
+    repo["secrets_actions_repo"] = response.json()["total_count"]
+
+    response = github.rest.actions.list_repo_organization_secrets(org_name, repo_name)
+    repo["secrets_actions_org"] = response.json()["total_count"]
+
+    response = github.rest.dependabot.list_repo_secrets(org_name, repo_name)
+    repo["secrets_dependabot"] = response.json()["total_count"]
+
+    try:
+        response = github.rest.codespaces.list_repo_secrets(org_name, repo_name)
+        repo["secrets_codespaces"] = response.json()["total_count"]
+    except:
+        repo["secrets_codespaces"] = None
+
+    ############################################################
+    # Get repository topics, perms, visibility, security
+    ############################################################
+    response = github.rest.repos.get(org_name, repo_name)
+    repo["topics"] = response.json()["topics"]
+    repo["permissions"] = response.json()["permissions"]
+    repo["visibility"] = response.json()["visibility"]
+    repo["security_and_analysis"] = response.json()["security_and_analysis"]
 
     ############################################################
     # Check if GitLFS being used by checking .gitattributes
