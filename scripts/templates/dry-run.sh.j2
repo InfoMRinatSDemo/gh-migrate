@@ -7,7 +7,7 @@ gh migrate stats \
 {%- for org in orgs %}
     --source-org "{{ org }}" \
 {%- endfor %}
-    --source-pat {{ source_pat }}
+    --source-pat {{ source_pat }} \
     -o before-source-dry-run-04-16-2024.csv
 
 ##########################################
@@ -21,7 +21,7 @@ gh gei migrate-org \
     --github-source-pat {{ source_pat }} \
     --github-target-pat {{ target_pat }} \
     --verbose
-{% endfor %}
+{% endfor -%}
 
 ##########################################
 # Capture post-migration source stats
@@ -30,7 +30,7 @@ gh migrate stats \
 {%- for org in orgs %}
     --source-org "{{ org }}" \
 {%- endfor %}
-    --source-pat {{ source_pat }}
+    --source-pat {{ source_pat }} \
     -o after-source-dry-run-04-16-2024.csv
 
 ##########################################
@@ -40,5 +40,5 @@ gh migrate stats \
 {%- for org in orgs %}
     --target-org "{{ org }}-DRYRUN" \
 {%- endfor %}
-    --target-pat {{ target_pat }}
+    --target-pat {{ target_pat }} \
     -o after-target-dry-run-04-16-2024.csv
