@@ -51,7 +51,7 @@ gh migrate stats \
 
 With the inventories gathered, we can begin planning the dry-run, and ultimately the production migration.
 
-The `gh migrate plan` command to create the "migration workbook", which serves as the data repository and planning tool for the rest of the migration.
+Use the `gh migrate plan` command to create the "migration workbook" which will be your sole data repository and planning tool to complete the migration.
 
 ```bash
 gh migrate plan source-before-04-16-2024.csv
@@ -76,27 +76,97 @@ There are typically:
 
 For more details see...
 
+#### Mapping - Org
+
+...
+
 #### Inventory
 ...
 
 ### Step 4: Dry-Run Execution
 
+Once you've identified which organizations will be part of the dry-run, you can generate the dry-run migration scripts:
 
+```bash
+gh migrate scripts dry-run "report/InfoMagnus - Migration Workbook.xlsx"
+```
 
-## Features
-- [List the key features and functionalities of the tool]
+The dry-run script is placed in `scripts/dry-run.sh`, and looks like:
 
-## Installation
-1. [Provide step-by-step instructions on how to install the tool]
-2. [Include any dependencies or prerequisites]
+```bash
+#!/bin/bash
 
-## Usage
-1. [Explain how to use the tool]
-2. [Include examples or code snippets if applicable]
+##########################################
+# Capture pre-migration source stats
+##########################################
+gh migrate stats \
+    --source-org "org1" \
+    --source-org "org2" \
+    --source-pat secret! \
+    -o before-source-dry-run-04-16-2024.csv
+
+##########################################
+# Migrate!
+##########################################
+gh gei migrate-org \
+    --github-target-enterprise  \
+    --github-source-org org1 \
+    --github-target-org org1-DRYRUN \
+    --github-source-pat secret! \
+    --github-target-pat omg! \
+    --verbose
+
+gh gei migrate-org \
+    --github-target-enterprise  \
+    --github-source-org org2 \
+    --github-target-org org2-DRYRUN \
+    --github-source-pat secret! \
+    --github-target-pat omg! \
+    --verbose
+
+##########################################
+# Capture post-migration source stats
+##########################################
+gh migrate stats \
+    --source-org "org1" \
+    --source-org "org2" \
+    --source-pat secret! \
+    -o after-source-dry-run-04-16-2024.csv
+
+##########################################
+# Capture post-migration target stats
+##########################################
+gh migrate stats \
+    --target-org "org1-DRYRUN" \
+    --target-org "org2-DRYRUN" \
+    --target-pat omg! \
+    -o after-target-dry-run-04-16-2024.csv
+```
+
+A dry-run is performed in four steps:
+1. Capture a pre-migration snapshot of the source
+2. Perform the migration
+3. Capture a post-migration snapshot of the source
+4. Capture a post-migration snapshot of the target
+
+For more detail on the process see: [link](TBD)
+
+### Step 5: Dry-Run Analysis
+
+Analysis of the dry-run takes two steps:
+
+1. Analysis of the source and target orgs using the `gh migrate diff` command:
+
+    ```bash
+    gh migrate diff \
+        before-source-dry-run-04-16-2024.csv \
+        after-source-dry-run-04-16-2024.csv \
+        after-target-dry-run-04-16-2024.csv \
+        "report/InfoMagnus - Migration Workbook.xlsx"
+    ```
 
 ## Contributing
-- [Explain how others can contribute to the development of the tool]
-- [Include guidelines for submitting pull requests or raising issues]
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
 ## License
 [Specify the license under which the tool is distributed]
