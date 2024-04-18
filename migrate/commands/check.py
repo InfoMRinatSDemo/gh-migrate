@@ -97,16 +97,26 @@ def process_org(github: GitHub, source, org, output_dir):
     (start_time, end_time, duration) = parse_org_log(output_dir)
 
     # Parse the repository migration logs
-    (repo_timing, repo_results) = parse_repo_logs(org, f"./{output_dir}/failure")
+    (success_repo_timing, success_repo_results) = parse_repo_logs(
+        org, "success", f"./{output_dir}"
+    )
+    (fail_repo_timing, fail_repo_results) = parse_repo_logs(
+        org, "failure", f"./{output_dir}"
+    )
+
+    repo_timing = pd.concat([success_repo_timing, fail_repo_timing])
+    repo_results = pd.concat([success_repo_results, fail_repo_results])
 
     return (start_time, end_time, duration, repo_timing, repo_results)
 
 
-def parse_repo_logs(org, output_dir):
+def parse_repo_logs(org, type, output_dir):
     import os
 
     timing = []
     results = []
+
+    output_dir = f"{output_dir}/{type}"
 
     # Return if output_dir doesn't exist
     if not os.path.exists(output_dir):
@@ -129,11 +139,10 @@ def parse_repo_logs(org, output_dir):
         assert len(start_line) == 1
         start_line = start_line[0]
 
-        end_line = [line for line in lines if "Migration complete" in line]
-        if len(end_line) == 0:
-            end_line = [line for line in lines if "Migration failed" in line]
-            assert len(end_line) == 1
-            end_line = end_line[0]
+        if type == "success":
+            end_line = [line for line in lines if "Migration complete" in line][0]
+        elif type == "failure":
+            end_line = [line for line in lines if "Migration failed" in line][0]
 
         # Parse start time from start_line
         start_time = start_line.split(" ")[0]
