@@ -124,7 +124,7 @@ gh migrate stats \
     --source-org "org1" \
     --source-org "org2" \
     --source-pat secret! \
-    -o before-source-dry-run-04-16-2024.csv
+    -o logs/before-source-dry-run-04-16-2024.csv
 
 ##########################################
 # Migrate!
@@ -152,7 +152,7 @@ gh migrate stats \
     --source-org "org1" \
     --source-org "org2" \
     --source-pat secret! \
-    -o after-source-dry-run-04-16-2024.csv
+    -o logs/after-source-dry-run-04-16-2024.csv
 
 ##########################################
 # Capture post-migration target stats
@@ -161,16 +161,19 @@ gh migrate stats \
     --target-org "org1-DRYRUN" \
     --target-org "org2-DRYRUN" \
     --target-pat omg! \
-    -o after-target-dry-run-04-16-2024.csv
+    -o logs/after-target-dry-run-04-16-2024.csv
+
+##########################################
+# Capture migration logs
+##########################################
+gh migrate check \
+    --target-org "org1-DRYRUN" \
+    --target-org "org2-DRYRUN" \
+    --target-pat omg! \
+    -o logs
 ```
 
-A dry-run is performed in four steps:
-1. Capture a pre-migration snapshot of the source
-2. Perform the migration
-3. Capture a post-migration snapshot of the source
-4. Capture a post-migration snapshot of the target
-
-For more detail on the process see: [link](TBD)
+For more detail on the process see: [link](docs/migration-process.md)
 
 ### Step 5: Dry-Run Analysis
 
@@ -180,11 +183,15 @@ Analysis of the dry-run takes two steps:
 
     ```bash
     gh migrate diff \
-        before-source-dry-run-04-16-2024.csv \
-        after-source-dry-run-04-16-2024.csv \
-        after-target-dry-run-04-16-2024.csv \
+        logs/before-source-dry-run-04-16-2024.csv \
+        logs/after-source-dry-run-04-16-2024.csv \
+        logs/after-target-dry-run-04-16-2024.csv \
         "report/InfoMagnus - Migration Workbook.xlsx"
     ```
+
+2. Analysis of the migration logs
+
+
 
 ## Contributing
 See [CONTRIBUTING.md](docs/CONTRIBUTING.md)
