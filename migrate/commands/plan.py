@@ -3,7 +3,7 @@ import click
 import pandas as pd
 
 from openpyxl import load_workbook
-from ..workbook import add_inventory_worksheet, add_pre_migration_report
+from ..workbook import *
 
 
 @click.command()
@@ -21,3 +21,4 @@ def plan(before_source):
 
     add_inventory_worksheet(workbook, stats)
     add_pre_migration_report(workbook, stats)
+    add_org_mapping(workbook, stats)

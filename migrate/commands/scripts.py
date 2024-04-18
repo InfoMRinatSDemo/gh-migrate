@@ -1,6 +1,8 @@
 import os
 import click
 from jinja2 import Environment, FileSystemLoader
+from openpyxl import load_workbook
+import pandas as pd
 
 
 @click.group()
@@ -30,11 +32,24 @@ def render_template(template_name, **kwargs):
 # Dry-run script
 ###############################
 @scripts.command()
-def dry_run():
+@click.argument("workbook", required=True)
+def dry_run(workbook):
     """
     Generate the dry-run script.
     """
-    render_template("dry-run.sh.j2", orgs=["org1", "org2", "org3"])
+
+    # Load the Org Mappings
+    wb = load_workbook(workbook)
+    ws = wb["Mapping - Org"]
+    df = pd.DataFrame(ws.values)
+
+    # Filter out excluded orgs
+    df = df[df[2] == False]
+
+    # Convert to a list of org names
+    orgs = df[0].tolist()
+
+    render_template("dry-run.sh.j2", orgs=orgs)
 
 
 ###############################

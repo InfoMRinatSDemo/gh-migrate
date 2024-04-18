@@ -39,8 +39,11 @@ def autosize_columns(worksheet):
 
 
 def write_table(worksheet, df, table_name, heading=""):
-    df["pushedAt"] = df["pushedAt"].dt.tz_localize(None)
-    df["updatedAt"] = df["updatedAt"].dt.tz_localize(None)
+    # If pushedAt exists in the df
+    if "pushedAt" in df.columns:
+        df["pushedAt"] = df["pushedAt"].dt.tz_localize(None)
+    if "updatedAt" in df.columns:
+        df["updatedAt"] = df["updatedAt"].dt.tz_localize(None)
 
     # Add a header with the table name
     if heading != "":
@@ -94,6 +97,50 @@ def add_inventory_worksheet(workbook, stats):
     write_table(worksheet, stats, "Inventory")
 
 
+def write_mappings_file(df, cols):
+    df = df[cols]
+
+    # Rename the "name" columns to "source name" and "target name"
+    cols = list(df.columns)
+
+    # Rename the "name" columns to "source name" and "target name"
+    if cols[0] == "name" and cols[1] == "name":
+        cols[0] = "source_name"
+        cols[1] = "target_name"
+    else:
+        raise ValueError('Columns 0 and 1 must be "name"')
+
+    df.columns = cols
+    # df.to_csv(filename, index=False)
+    return df
+
+
+def add_org_mapping(workbook, stats):
+    """ """
+
+    desired_index = workbook.sheetnames.index("Cover") + 2
+    worksheet = add_sheet(workbook, "Mapping - Org", desired_index, "FF0000")
+
+    # Clear the contents of the worksheet
+    worksheet.delete_rows(1, worksheet.max_row)
+
+    # TODO: Clean up this mess...
+    stats = stats.rename(columns={"name": "_name"})
+    stats = stats.rename(columns={"owner.login": "name"})
+    stats["exclude"] = False
+    stats["exclude_reason"] = ""
+
+    # Remove dupes from stats
+    stats = stats.drop_duplicates(subset=["name"])
+
+    stats = write_mappings_file(stats, ["name", "name", "exclude", "exclude_reason"])
+
+    # Create org mapping table
+    write_table(worksheet, stats, "Mapping_Org")
+
+    workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
+
+
 def add_pre_migration_report(workbook, stats):
     """ """
 
@@ -144,5 +191,4 @@ def add_pre_migration_report(workbook, stats):
     # def identify_git_lfs():
     # # TODO: Need to figure out how to implement this
 
-    # Save the workbook to a file called 'test.xlsx'
     workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
