@@ -6,12 +6,18 @@ import datetime
 
 import openpyxl
 from openpyxl.styles import Font
+from openpyxl import load_workbook
 from openpyxl.worksheet.table import TableStyleInfo
 
 # Create a table style
 table_style = TableStyleInfo(
     name="TableStyleMedium9", showFirstColumn=False, showLastColumn=False
 )
+
+
+def initialize_workbook():
+    workbook = load_workbook(os.path.join("report", "template", "workbook.xlsx"))
+    workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
 
 
 def add_sheet(workbook, sheet_name, desired_index=0, tab_color="FF0000"):

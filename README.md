@@ -12,18 +12,44 @@ Specifically, the tool has been used to help plan and execute the StreamCo and C
 - `gh migrate diff` -
 - `gh migrate plan` -
 
+## Installation
+
+`gh extension install im-infomagnus/gh-migrate`
+
+**NOTE:** This tool is meant to be run in a Visual Studio Code devcontainer or GitHub Codespaces.
+
 ## Usage
 
 During an engagement the tool is used as follows:
 
-### Step 1: Generate source / target organization PATs
+### Step 1: Start
 
-Personal Access Tokens (PATs) for both the source and target enterprise are
-required to complete the "Pre-Migration Analysis".
+Begin a migration by forking this repository and `git clone`ing a local copy.
+
+Type `gh migrate start` to create a "migration workbook".
+
+The initialized workbook is placed in `report/InfoMagnus - Migration Workbook.xlsx`.
+
+The "migration workbook" is an Excel workbook which all subsequent `gh migrate` workflows operate around.  The workbook is meant to be a solution to the deluge of files, scripts, logs, versions, etc. which spring forth around migration projects.
+
+It will be your sole data repository and planning tool to complete the migration.
+
+The migration workbook will contain a single sheet, Cover, which you should use to capture and initial high-level information about the engagement.
+
+![alt text](docs/images/workbook-cover.png)
+
+
+### Step 2: Generate source / target organization PATs
+
+Personal Access Tokens (PATs) for both the source and target enterprise are required to use `gh migrate`.
 
 The PATs must be of type "classic" with the following permissions: [link](images/pat-perms.png)
 
-### Step 2: Discovery
+Work with your client to generate these tokens.
+
+Store the tokens in your [Bitwarden](https://bitwarden.com/) repository.
+
+### Step 3: Discovery
 
 In this step we generate inventories of the source enterprise:
 
@@ -51,19 +77,11 @@ gh migrate stats \
 
 With the inventories gathered, we can begin planning the dry-run, and ultimately the production migration.
 
-Use the `gh migrate plan` command to create the "migration workbook" which will be your sole data repository and planning tool to complete the migration.
 
 ```bash
 gh migrate plan source-before-04-16-2024.csv
 ```
 
-The initialized workbook is placed in `report/InfoMagnus - Migration Workbook.xlsx`.
-
-#### Cover
-
-The "Cover" sheet is where the engagement-specific details are entered....
-
-![alt text](docs/images/workbook-cover.png)
 
 #### Pre-migration Report
 
