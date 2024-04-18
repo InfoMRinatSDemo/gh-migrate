@@ -2,11 +2,11 @@ import click
 import pandas as pd
 
 import os
-import base64
 from functools import lru_cache
 from githubkit import GitHub
 
-# from tqdm import tqdm
+import subprocess
+from datetime import datetime
 
 
 @click.command()
@@ -17,14 +17,14 @@ def check(target_orgs, target_pat, output):
     print(f"* Checking {target_orgs}")
 
     org_timings = []
-    arepo_timings = []
-    arepo_results = []
+    repo_timings = []
+    repo_results = []
 
     if target_orgs is not None:
         for org in target_orgs:
             print(f"\n* Processing org {org}")
             github = GitHub(target_pat)
-            (start_time, end_time, duration, repo_timing, repo_results) = process_org(
+            (start_time, end_time, duration, repo_timing, repo_result) = process_org(
                 github, "target", org, output
             )
 
@@ -33,23 +33,23 @@ def check(target_orgs, target_pat, output):
                     "org": org,
                     "start_time": start_time,
                     "end_time": end_time,
-                    "duration": duration,
+                    "duration (mins)": duration,
                 }
             )
 
-            arepo_timings.append(repo_timing)
-            arepo_results.append(repo_results)
+            repo_timings.append(repo_timing)
+            repo_results.append(repo_results)
 
     # Save the timings
     org_timings_df = pd.DataFrame(org_timings)
     org_timings_df.to_csv(f"{output}/org_timings.csv", index=False)
 
     # Combine dataframes in arepo_timings and arepo_results
-    arepo_timings_df = pd.concat(arepo_timings)
-    arepo_results_df = pd.concat(arepo_results)
+    repo_timings_df = pd.concat(repo_timings)
+    repo_results_df = pd.concat(repo_results)
 
-    arepo_timings_df.to_csv(f"{output}/repo_timings.csv", index=False)
-    arepo_results_df.to_csv(f"{output}/repo_results.csv", index=False)
+    repo_timings_df.to_csv(f"{output}/repo_timings.csv", index=False)
+    repo_results_df.to_csv(f"{output}/repo_results.csv", index=False)
 
 
 ###############################################################################
@@ -72,7 +72,6 @@ def process_org(github: GitHub, source, org, output_dir):
     """Process all repos in an org"""
 
     # Try cloning 'gei-migration-results' repo using 'gh repo clone'
-    import subprocess
 
     output_dir = f"{output_dir}/{org}"
 
@@ -111,7 +110,6 @@ def process_org(github: GitHub, source, org, output_dir):
 
 
 def parse_repo_logs(org, type, output_dir):
-    import os
 
     timing = []
     results = []
@@ -153,7 +151,6 @@ def parse_repo_logs(org, type, output_dir):
         end_time = end_time[1:-1]
 
         # start_time contains a string like "2024-04-12T01:25:50Z"
-        from datetime import datetime
 
         start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
         end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
@@ -162,11 +159,11 @@ def parse_repo_logs(org, type, output_dir):
 
         timing.append(
             {
-                "Org": org,
-                "Repo": repo_log,
-                "Start time": start_time,
-                "End time": end_time,
-                "Duration": end_time - start_time,
+                "org": org,
+                "repo": repo_log,
+                "start_time": start_time,
+                "end_time": end_time,
+                "duration (mins)": int((end_time - start_time).total_seconds() / 60),
             }
         )
 
@@ -181,10 +178,10 @@ def parse_repo_logs(org, type, output_dir):
             for warning in warnings:
                 results.append(
                     {
-                        "Org": org,
-                        "Repo": repo_log,
-                        "Type": "WARN",
-                        "Message": warning.strip(),
+                        "org": org,
+                        "repo": repo_log,
+                        "type": "WARN",
+                        "message": warning.strip(),
                     }
                 )
 
@@ -192,10 +189,10 @@ def parse_repo_logs(org, type, output_dir):
             for error in errors:
                 results.append(
                     {
-                        "Org": org,
-                        "Repo": repo_log,
-                        "Type": "ERROR",
-                        "Message": error.strip(),
+                        "org": org,
+                        "repo": repo_log,
+                        "type": "ERROR",
+                        "message": error.strip(),
                     }
                 )
 
@@ -211,7 +208,6 @@ def parse_repo_logs(org, type, output_dir):
 
 
 def parse_org_log(output_dir):
-    import os
 
     org_log = os.path.join("./", output_dir, "README.md")
 
@@ -232,12 +228,11 @@ def parse_org_log(output_dir):
     end_time = end_time[1:-1]
 
     # start_time contains a string like "2024-04-12T01:25:50Z"
-    from datetime import datetime
 
     start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
     end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
 
-    return (start_time, end_time, end_time - start_time)
+    return (start_time, end_time, int((end_time - start_time).total_seconds() / 60))
 
 
 def get_pat(type):
