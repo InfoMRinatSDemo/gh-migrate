@@ -42,3 +42,13 @@ gh migrate stats \
 {%- endfor %}
     --target-pat {{ target_pat }} \
     -o after-target-dry-run-04-16-2024.csv
+
+##########################################
+# Capture migration logs
+##########################################
+gh migrate check \
+{%- for org in orgs %}
+    --target-org "{{ org }}" \
+{%- endfor %}
+    --target-pat {{ target_pat }} \
+    -o logs
