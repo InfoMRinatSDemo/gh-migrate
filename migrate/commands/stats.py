@@ -6,32 +6,39 @@ import base64
 from functools import lru_cache
 from githubkit import GitHub
 
-# from tqdm import tqdm
-
 
 @click.command()
 @click.option("-s", "--source-org", "source_orgs", multiple=True, required=True)
 @click.option("-sp", "--source-pat", "source_pat", required=True)
 @click.option("-t", "--target-org", "target_orgs", multiple=True, required=False)
 @click.option("-tp", "--target-pat", "target_pat", required=False)
-@click.option("-o", "--output", "output", required=True)
-def stats(source_orgs, source_pat, target_orgs, target_pat, output):
+@click.argument("output_dir", required=False, default="logs")
+def stats(source_orgs, source_pat, target_orgs, target_pat, output_dir):
     print(f"* Inventorying {source_orgs} and {target_orgs}")
+
+    source_path = os.path.join("./", output_dir, "before-source.csv")
+    target_path = os.path.join("./", output_dir, "before-target.csv")
+
+    # Delete source and target files if they exist
+    if os.path.exists(source_path):
+        os.remove(source_path)
+    if os.path.exists(target_path):
+        os.remove(target_path)
 
     if source_orgs is not None:
         for org in source_orgs:
             print(f"\n* Processing org {org}")
             github = GitHub(source_pat)
-            process_org(github, "source", org, output)
+            process_org(github, "source", org, source_path)
 
     if target_orgs is not None:
         for org in target_orgs:
             print(f"\n* Processing org {org}")
             github = GitHub(target_pat)
-            process_org(github, "target", org, output)
+            process_org(github, "target", org, target_path)
 
 
-def process_org(github, source, org, output_file):
+def process_org(github, source, org, output_dir):
     """Process all repos in an org"""
 
     ############################################################
@@ -114,7 +121,7 @@ def process_org(github, source, org, output_file):
         repo = pd.json_normalize(repo)
 
         # Write to file
-        with open(output_file, "a") as f:
+        with open(output_dir, "a") as f:
             repo.to_csv(f, header=f.tell() == 0, index=False)
 
 
