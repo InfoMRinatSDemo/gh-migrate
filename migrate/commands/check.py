@@ -16,11 +16,40 @@ from githubkit import GitHub
 def check(target_orgs, target_pat, output):
     print(f"* Checking {target_orgs}")
 
+    org_timings = []
+    arepo_timings = []
+    arepo_results = []
+
     if target_orgs is not None:
         for org in target_orgs:
             print(f"\n* Processing org {org}")
             github = GitHub(target_pat)
-            process_org(github, "target", org, output)
+            (start_time, end_time, duration, repo_timing, repo_results) = process_org(
+                github, "target", org, output
+            )
+
+            org_timings.append(
+                {
+                    "org": org,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "duration": duration,
+                }
+            )
+
+            arepo_timings.append(repo_timing)
+            arepo_results.append(repo_results)
+
+    # Save the timings
+    org_timings_df = pd.DataFrame(org_timings)
+    org_timings_df.to_csv(f"{output}/org_timings.csv", index=False)
+
+    # Combine dataframes in arepo_timings and arepo_results
+    arepo_timings_df = pd.concat(arepo_timings)
+    arepo_results_df = pd.concat(arepo_results)
+
+    arepo_timings_df.to_csv(f"{output}/repo_timings.csv", index=False)
+    arepo_results_df.to_csv(f"{output}/repo_results.csv", index=False)
 
 
 ###############################################################################
@@ -65,17 +94,23 @@ def process_org(github: GitHub, source, org, output_dir):
         print(f'Failed to retrieve migration logs: {result.stderr.decode("utf-8")}')
 
     # Parse the organization migration log
-    parse_org_log(output_dir)
+    (start_time, end_time, duration) = parse_org_log(output_dir)
 
     # Parse the repository migration logs
-    parse_repo_logs(org, f"./{output_dir}/success")
+    (repo_timing, repo_results) = parse_repo_logs(org, f"./{output_dir}/failure")
+
+    return (start_time, end_time, duration, repo_timing, repo_results)
 
 
 def parse_repo_logs(org, output_dir):
     import os
 
-    timing_results = []
+    timing = []
     results = []
+
+    # Return if output_dir doesn't exist
+    if not os.path.exists(output_dir):
+        return pd.DataFrame(timing), pd.DataFrame(results)
 
     # Get all the directories in the output_dir
     repos = [repo for repo in os.listdir(output_dir)]
@@ -86,12 +121,19 @@ def parse_repo_logs(org, output_dir):
             lines = [line for line in f.readlines() if line.startswith("[")]
 
         ############################################################
-        # Print repo migration timing
+        # Get repo migration timing
         ############################################################
 
-        # Get line containing "Repository migration started"
-        start_line = [line for line in lines if "Migration started" in line][0]
-        end_line = [line for line in lines if "Migration complete" in line][0]
+        # We should *always* have a start line
+        start_line = [line for line in lines if "Migration started" in line]
+        assert len(start_line) == 1
+        start_line = start_line[0]
+
+        end_line = [line for line in lines if "Migration complete" in line]
+        if len(end_line) == 0:
+            end_line = [line for line in lines if "Migration failed" in line]
+            assert len(end_line) == 1
+            end_line = end_line[0]
 
         # Parse start time from start_line
         start_time = start_line.split(" ")[0]
@@ -109,7 +151,7 @@ def parse_repo_logs(org, output_dir):
 
         print(f"Repo: {repo_log}")
 
-        timing_results.append(
+        timing.append(
             {
                 "Org": org,
                 "Repo": repo_log,
@@ -120,10 +162,9 @@ def parse_repo_logs(org, output_dir):
         )
 
         ############################################################
-        # Print warnings or errors
+        # Get warnings or errors
         ############################################################
 
-        # Get lines containing "WARN" or "ERROR"
         warnings = [line for line in lines if "WARN" in line]
         errors = [line for line in lines if "ERROR" in line]
 
@@ -149,13 +190,15 @@ def parse_repo_logs(org, output_dir):
                     }
                 )
 
-        # Write timing_results to csv
-        timing_df = pd.DataFrame(timing_results)
-        timing_df.to_csv(f"{org}_timing_results.csv", index=False)
+    # Write timing_results to csv
+    timing_df = pd.DataFrame(timing)
+    # timing_df.to_csv(f"{org}_timing_results.csv", index=False)
 
-        # Write results to csv
-        results_df = pd.DataFrame(results)
-        results_df.to_csv(f"{org}_results.csv", index=False)
+    # Write results to csv
+    results_df = pd.DataFrame(results)
+    # results_df.to_csv(f"{org}_results.csv", index=False)
+
+    return (timing_df, results_df)
 
 
 def parse_org_log(output_dir):
@@ -185,36 +228,7 @@ def parse_org_log(output_dir):
     start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
     end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
 
-    print("The migration started at:", start_time)
-    print("The migration ended at:", end_time)
-    print("The migration took:", end_time - start_time)
-
-    ############################################################
-    # Get repos
-    ############################################################
-    # repos = get_repos(github, org)
-
-    # for repo in repos:
-    #     print(f'** Downloading migration log from "{repo["name"]}"')
-
-    #     repo_name = repo["name"]
-    #     org_name = repo["owner"]["login"]
-
-    #     ############################################################
-    #     # Get latest issue comment
-    #     ############################################################
-    #     response = github.rest.issues.list_comments_for_repo(org_name, repo_name)
-    #     id = response.json()[0]["id"]
-
-    #     comment = github.rest.issues.get_comment(org_name, repo_name, id)
-    #     print(comment.json()["body"])
-
-    #     # Get directory path
-    #     output_path = os.path.join(output_dir, f"{org_name}-{repo_name}.csv")
-
-    #     # Write issue comment to file
-    #     with open(output_path, "w") as f:
-    #         f.write(comment.json()["body"])
+    return (start_time, end_time, end_time - start_time)
 
 
 def get_pat(type):
