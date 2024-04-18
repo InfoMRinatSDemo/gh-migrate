@@ -68,11 +68,14 @@ def process_org(github: GitHub, source, org, output_dir):
     parse_org_log(output_dir)
 
     # Parse the repository migration logs
-    parse_repo_logs(f"./{output_dir}/success")
+    parse_repo_logs(org, f"./{output_dir}/success")
 
 
-def parse_repo_logs(output_dir):
+def parse_repo_logs(org, output_dir):
     import os
+
+    timing_results = []
+    results = []
 
     # Get all the directories in the output_dir
     repos = [repo for repo in os.listdir(output_dir)]
@@ -105,9 +108,16 @@ def parse_repo_logs(output_dir):
         end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
 
         print(f"Repo: {repo_log}")
-        print(f"Start time: {start_time}")
-        print(f"End time: {end_time}")
-        print(f"Duration: {end_time - start_time}")
+
+        timing_results.append(
+            {
+                "Org": org,
+                "Repo": repo_log,
+                "Start time": start_time,
+                "End time": end_time,
+                "Duration": end_time - start_time,
+            }
+        )
 
         ############################################################
         # Print warnings or errors
@@ -118,12 +128,34 @@ def parse_repo_logs(output_dir):
         errors = [line for line in lines if "ERROR" in line]
 
         if len(warnings) != 0:
-            print("Warnings:")
-            [print(warning) for warning in warnings]
+            for warning in warnings:
+                results.append(
+                    {
+                        "Org": org,
+                        "Repo": repo_log,
+                        "Type": "WARN",
+                        "Message": warning.strip(),
+                    }
+                )
 
         if len(errors) != 0:
-            print("Errors:")
-            [print(error) for error in errors]
+            for error in errors:
+                results.append(
+                    {
+                        "Org": org,
+                        "Repo": repo_log,
+                        "Type": "ERROR",
+                        "Message": error.strip(),
+                    }
+                )
+
+        # Write timing_results to csv
+        timing_df = pd.DataFrame(timing_results)
+        timing_df.to_csv(f"{org}_timing_results.csv", index=False)
+
+        # Write results to csv
+        results_df = pd.DataFrame(results)
+        results_df.to_csv(f"{org}_results.csv", index=False)
 
 
 def parse_org_log(output_dir):
