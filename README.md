@@ -57,8 +57,7 @@ In this step we generate inventories of the source enterprise:
 gh migrate stats \
     --source-org source-org-1 \
     --source-org source-org-2 \
-    --source-pat <source-org-PAT> \
-    -o source-before-04-16-2024.csv
+    --source-pat <source-org-PAT>
 ```
 
 If the target enterprise is an existing, production environment, then it's important to generate an inventory of it.
@@ -67,21 +66,25 @@ This serves as a snapshot and baseline of the client's landscape prior to our en
 
 ```bash
 gh migrate stats \
+    --source-org source-org-1 \
+    --source-org source-org-2 \
+    --source-pat <source-org-PAT> \
     --target-org target-org-1 \
     --target-org target-org-2 \
-    --target-pat <target-org-PAT> \
-    -o target-before-04-16-2024.csv
+    --target-pat <target-org-PAT>
 ```
 
 ### Step 3: Dry-Run Planning
 
 With the inventories gathered, we can begin planning the dry-run, and ultimately the production migration.
 
+To update the migration workbook with the inventory:
 
 ```bash
-gh migrate plan source-before-04-16-2024.csv
+gh migrate update inventory
 ```
 
+This will create three new sheets:
 
 #### Pre-migration Report
 
@@ -98,7 +101,7 @@ For more details see...
 
 ...
 
-#### Inventory
+#### Inventory - Source Repos
 ...
 
 ### Step 4: Dry-Run Execution

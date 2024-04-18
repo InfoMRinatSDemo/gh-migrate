@@ -41,6 +41,7 @@ def autosize_columns(worksheet):
             except:
                 pass
         adjusted_width = (max_length + 2) * 1.2
+        adjusted_width = min(adjusted_width, 60)
         worksheet.column_dimensions[column].width = adjusted_width
 
 
@@ -92,10 +93,14 @@ def write_table(worksheet, df, table_name, heading=""):
     worksheet.append([])
 
 
-def add_inventory_worksheet(workbook, stats):
+def add_inventory_worksheet(workbook, sheet_name, stats):
     """ """
+    # Delete the worksheet if it already exists
+    if sheet_name in workbook.sheetnames:
+        del workbook[sheet_name]
+
     desired_index = workbook.sheetnames.index("Cover") + 1
-    worksheet = add_sheet(workbook, "Inventory", desired_index, "002060")
+    worksheet = add_sheet(workbook, sheet_name, desired_index, "002060")
 
     # Clear the contents of the worksheet
     worksheet.delete_rows(1, worksheet.max_row)
@@ -121,11 +126,14 @@ def write_mappings_file(df, cols):
     return df
 
 
-def add_org_mapping(workbook, stats):
+def add_org_mapping(workbook, sheet_name, stats):
     """ """
+    # Delete the worksheet if it already exists
+    if sheet_name in workbook.sheetnames:
+        del workbook[sheet_name]
 
     desired_index = workbook.sheetnames.index("Cover") + 2
-    worksheet = add_sheet(workbook, "Mapping - Org", desired_index, "FF0000")
+    worksheet = add_sheet(workbook, sheet_name, desired_index, "FF0000")
 
     # Clear the contents of the worksheet
     worksheet.delete_rows(1, worksheet.max_row)
@@ -144,14 +152,17 @@ def add_org_mapping(workbook, stats):
     # Create org mapping table
     write_table(worksheet, stats, "Mapping_Org")
 
-    workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
+    workbook.save(workbook.filename)
 
 
-def add_pre_migration_report(workbook, stats):
+def add_pre_migration_report(workbook, sheet_name, stats):
     """ """
+    # Delete the worksheet if it already exists
+    if sheet_name in workbook.sheetnames:
+        del workbook[sheet_name]
 
     desired_index = workbook.sheetnames.index("Cover") + 1
-    worksheet = add_sheet(workbook, "Pre-migration report", desired_index, "215C98")
+    worksheet = add_sheet(workbook, sheet_name, desired_index, "215C98")
 
     # Clear the contents of the worksheet
     worksheet.delete_rows(1, worksheet.max_row)
@@ -197,4 +208,4 @@ def add_pre_migration_report(workbook, stats):
     # def identify_git_lfs():
     # # TODO: Need to figure out how to implement this
 
-    workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
+    workbook.save(workbook.filename)
