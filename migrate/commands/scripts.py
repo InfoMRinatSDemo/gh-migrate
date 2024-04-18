@@ -32,7 +32,9 @@ def render_template(template_name, **kwargs):
 # Dry-run script
 ###############################
 @scripts.command()
-@click.argument("workbook", required=True)
+@click.argument(
+    "workbook", required=False, default="report/InfoMagnus - Migration Workbook.xlsx"
+)
 def dry_run(workbook):
     """
     Generate the dry-run script.

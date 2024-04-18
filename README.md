@@ -109,7 +109,7 @@ For more details see...
 Once you've identified which organizations will be part of the dry-run, you can generate the dry-run migration scripts:
 
 ```bash
-gh migrate scripts dry-run "report/InfoMagnus - Migration Workbook.xlsx"
+gh migrate scripts dry-run
 ```
 
 The dry-run script is placed in `scripts/dry-run.sh`, and looks like:
