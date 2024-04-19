@@ -30,9 +30,7 @@ Type `gh migrate start` to create a "migration workbook".
 
 The initialized workbook is placed in `report/InfoMagnus - Migration Workbook.xlsx`.
 
-The "migration workbook" is an Excel workbook which all subsequent `gh migrate` workflows operate around.  The workbook is meant to be a solution to the deluge of files, scripts, logs, versions, etc. which spring forth around migration projects.
-
-It will be your sole data repository and planning tool to complete the migration.
+The "migration workbook" is an Excel workbook which all subsequent `gh migrate` workflows operate around.  It is your sole data repository and planning tool to complete the migration.
 
 The migration workbook will contain a single sheet, Cover, which you should use to capture and initial high-level information about the engagement.
 
@@ -55,9 +53,12 @@ In this step we generate inventories of the source enterprise:
 
 ```bash
 gh migrate stats \
-    --source-org source-org-1 \
-    --source-org source-org-2 \
-    --source-pat <source-org-PAT>
+    --org source-org-1 \
+    --org source-org-2 \
+    ...
+    --before \
+    --source \
+    --pat <source-org-PAT>
 ```
 
 If the target enterprise is an existing, production environment, then it's important to generate an inventory of it.
@@ -66,12 +67,12 @@ This serves as a snapshot and baseline of the client's landscape prior to our en
 
 ```bash
 gh migrate stats \
-    --source-org source-org-1 \
-    --source-org source-org-2 \
-    --source-pat <source-org-PAT> \
-    --target-org target-org-1 \
-    --target-org target-org-2 \
-    --target-pat <target-org-PAT>
+    --org target-org-1 \
+    --org target-org-2 \
+    ...
+    --before \
+    --target \
+    --pat <target-org-PAT> \
 ```
 
 ### Step 3: Dry-Run Planning
@@ -81,7 +82,7 @@ With the inventories gathered, we can begin planning the dry-run, and ultimately
 To update the migration workbook with the inventory:
 
 ```bash
-gh migrate update inventory
+gh migrate load inventory
 ```
 
 This will create three new sheets:
@@ -121,56 +122,58 @@ The dry-run script is placed in `scripts/dry-run.sh`, and looks like:
 # Capture pre-migration source stats
 ##########################################
 gh migrate stats \
-    --source-org "org1" \
-    --source-org "org2" \
-    --source-pat secret! \
-    -o logs/before-source-dry-run-04-16-2024.csv
+    --org "source-org1" \
+    --org "source-org2" \
+    --before \
+    --source \
+    --pat secret! \
 
 ##########################################
 # Migrate!
 ##########################################
 gh gei migrate-org \
     --github-target-enterprise  \
-    --github-source-org org1 \
-    --github-target-org org1-DRYRUN \
-    --github-source-pat secret! \
-    --github-target-pat omg! \
+    --github-source-org source-org1 \
+    --github-target-org source-org1-DRYRUN \
+    --github-source-pat secret \
+    --github-target-pat secret \
     --verbose
 
 gh gei migrate-org \
     --github-target-enterprise  \
-    --github-source-org org2 \
-    --github-target-org org2-DRYRUN \
-    --github-source-pat secret! \
-    --github-target-pat omg! \
+    --github-source-org source-org2 \
+    --github-target-org source-org2-DRYRUN \
+    --github-source-pat secret \
+    --github-target-pat secret \
     --verbose
 
 ##########################################
 # Capture post-migration source stats
 ##########################################
 gh migrate stats \
-    --source-org "org1" \
-    --source-org "org2" \
-    --source-pat secret! \
-    -o logs/after-source-dry-run-04-16-2024.csv
+    --org "source-org1" \
+    --org "source-org2" \
+    --after \
+    --source \
+    --pat secret \
 
 ##########################################
 # Capture post-migration target stats
 ##########################################
 gh migrate stats \
-    --target-org "org1-DRYRUN" \
-    --target-org "org2-DRYRUN" \
-    --target-pat omg! \
-    -o logs/after-target-dry-run-04-16-2024.csv
+    --org "org1-DRYRUN" \
+    --org "org2-DRYRUN" \
+    --after \
+    --target \
+    --pat omg! \
 
 ##########################################
 # Capture migration logs
 ##########################################
 gh migrate check \
-    --target-org "org1-DRYRUN" \
-    --target-org "org2-DRYRUN" \
-    --target-pat omg! \
-    -o logs
+    --org "org1-DRYRUN" \
+    --org "org2-DRYRUN" \
+    --pat omg! \
 ```
 
 For more detail on the process see: [link](docs/migration-process.md)
