@@ -20,6 +20,25 @@ def initialize_workbook():
     workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
 
 
+def get_included_source_orgs(workbook):
+    # Load the Org Mappings
+    wb = load_workbook(workbook)
+    ws = wb["Mapping - Org"]
+    df = pd.DataFrame(ws.values)
+
+    # If column 2 isn't named 'exclude' return
+    if df.columns[2] != "exclude":
+        raise ValueError(
+            "'Mapping - Org' column 2 must be named 'exclude'.  Stop messing with things!"
+        )
+
+    # Filter out excluded orgs
+    df = df[df[2] == False]
+
+    # Convert to a list of org names
+    orgs = df[0].tolist()
+
+
 def add_sheet(workbook, sheet_name, desired_index=0, tab_color="FF0000"):
     if sheet_name in workbook.sheetnames:
         worksheet = workbook[sheet_name]

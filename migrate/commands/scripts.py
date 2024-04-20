@@ -4,6 +4,8 @@ from jinja2 import Environment, FileSystemLoader
 from openpyxl import load_workbook
 import pandas as pd
 
+from ..workbook import get_included_source_orgs
+
 
 @click.group()
 def scripts():
@@ -40,17 +42,7 @@ def dry_run(workbook):
     Generate the dry-run script.
     """
 
-    # Load the Org Mappings
-    wb = load_workbook(workbook)
-    ws = wb["Mapping - Org"]
-    df = pd.DataFrame(ws.values)
-
-    # Filter out excluded orgs
-    df = df[df[2] == False]
-
-    # Convert to a list of org names
-    orgs = df[0].tolist()
-
+    orgs = get_included_source_orgs(workbook)
     render_template("dry-run.sh.j2", orgs=orgs)
 
 

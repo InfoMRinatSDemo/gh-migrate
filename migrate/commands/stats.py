@@ -6,10 +6,12 @@ import base64
 from functools import lru_cache
 from githubkit import GitHub
 
+from workbook import get_included_source_orgs
+
 
 @click.command()
-@click.option("--org", "orgs", multiple=True, required=True)
-@click.option("--pat", "pat", required=True)
+@click.option("--org", "orgs", multiple=True)
+@click.option("--pat", "pat")
 @click.option("--before", is_flag=True, help="Run before migration")
 @click.option("--after", is_flag=True, help="Run after migration")
 @click.option("--source", is_flag=True, help="Source organization(s)")
@@ -32,9 +34,16 @@ def stats(orgs, pat, before, after, source, target, dry_run, output_dir):
     elif after and target:
         output_file = "after-target.csv"
 
-    # If it's a dry-run prefix output_file with 'dry-run-'
+    # If it's a dry-run create a subfolder
     if dry_run:
-        output_file = f"dry-run-{output_file}"
+        output_dir = os.path.join(output_dir, "dry-run")
+
+    if orgs is None:
+        orgs = get_included_source_orgs()
+
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     output_path = os.path.join("./", output_dir, output_file)
 

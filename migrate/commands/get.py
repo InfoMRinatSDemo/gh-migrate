@@ -9,22 +9,31 @@ import subprocess
 from datetime import datetime
 
 
-@click.command()
-@click.option("-t", "--target-org", "target_orgs", multiple=True, required=False)
-@click.option("-tp", "--target-pat", "target_pat", required=False)
-@click.option("-o", "--output", "output", required=True)
-def get(target_orgs, target_pat, output):
-    print(f"* Checking {target_orgs}")
+@click.group()
+def get():
+    pass
+
+
+@get.command()
+@click.option("--org", "orgs", multiple=True, required=False)
+@click.option("--pat", "pat", required=False)
+@click.option("-o", "--output", "output", required=True, default="logs/dry-run")
+def logs(orgs, pat, output):
+    print(f"* Checking {orgs}")
+
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output):
+        os.makedirs(output)
 
     org_timings = []
     repo_timings = []
     repo_results = []
 
-    if target_orgs is not None:
-        for org in target_orgs:
+    if orgs is not None:
+        for org in orgs:
             print(f"\n* Processing org {org}")
-            github = GitHub(target_pat)
-            (start_time, end_time, duration, repo_timing, repo_result) = process_org(
+            github = GitHub(pat)
+            (start_time, end_time, duration, timing, result) = process_org(
                 github, "target", org, output
             )
 
@@ -37,8 +46,8 @@ def get(target_orgs, target_pat, output):
                 }
             )
 
-            repo_timings.append(repo_timing)
-            repo_results.append(repo_results)
+            repo_timings.append(timing)
+            repo_results.append(result)
 
     # Save the timings
     org_timings_df = pd.DataFrame(org_timings)
