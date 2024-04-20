@@ -8,34 +8,47 @@ from githubkit import GitHub
 
 
 @click.command()
-@click.option("-s", "--source-org", "source_orgs", multiple=True, required=True)
-@click.option("-sp", "--source-pat", "source_pat", required=True)
-@click.option("-t", "--target-org", "target_orgs", multiple=True, required=False)
-@click.option("-tp", "--target-pat", "target_pat", required=False)
+@click.option("--org", "orgs", multiple=True, required=True)
+@click.option("--pat", "pat", required=True)
+@click.option("--before", is_flag=True, help="Run before migration")
+@click.option("--after", is_flag=True, help="Run after migration")
+@click.option("--source", is_flag=True, help="Source organization(s)")
+@click.option("--target", is_flag=True, help="Target organization(s)")
+@click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
 @click.argument("output_dir", required=False, default="logs")
-def stats(source_orgs, source_pat, target_orgs, target_pat, output_dir):
-    print(f"* Inventorying {source_orgs} and {target_orgs}")
+def stats(orgs, pat, before, after, source, target, dry_run, output_dir):
+    # Make sure flags have been provided
+    if not (before ^ after):
+        raise click.UsageError("You must supply either --before or --after")
+    if not (source ^ target):
+        raise click.UsageError("You must supply either --source or --target")
 
-    source_path = os.path.join("./", output_dir, "before-source.csv")
-    target_path = os.path.join("./", output_dir, "before-target.csv")
+    if before and source:
+        output_file = "before-source.csv"
+    elif before and target:
+        output_file = "before-target.csv"
+    elif after and source:
+        output_file = "after-source.csv"
+    elif after and target:
+        output_file = "after-target.csv"
 
-    # Delete source and target files if they exist
-    if os.path.exists(source_path):
-        os.remove(source_path)
-    if os.path.exists(target_path):
-        os.remove(target_path)
+    # If it's a dry-run prefix output_file with 'dry-run-'
+    if dry_run:
+        output_file = f"dry-run-{output_file}"
 
-    if source_orgs is not None:
-        for org in source_orgs:
+    output_path = os.path.join("./", output_dir, output_file)
+
+    # Delete output file if it exists
+    if os.path.exists(output_path):
+        os.remove(output_path)
+
+    print(f"* Inventorying {orgs}")
+
+    if orgs is not None:
+        for org in orgs:
             print(f"\n* Processing org {org}")
-            github = GitHub(source_pat)
-            process_org(github, "source", org, source_path)
-
-    if target_orgs is not None:
-        for org in target_orgs:
-            print(f"\n* Processing org {org}")
-            github = GitHub(target_pat)
-            process_org(github, "target", org, target_path)
+            github = GitHub(pat)
+            process_org(github, "source", org, output_path)
 
 
 def process_org(github, source, org, output_dir):

@@ -7,13 +7,13 @@ from ..workbook import *
 
 
 @click.group()
-def update():
+def load():
     pass
 
 
-@update.command()
-@click.argument("before-source", required=False, default="report/before-source.csv")
-@click.argument("before-target", required=False, default="report/before-target.csv")
+@load.command()
+@click.argument("before-source", required=False, default="logs/before-source.csv")
+@click.argument("before-target", required=False, default="logs/before-target.csv")
 @click.option(
     "-w",
     "--workbook",

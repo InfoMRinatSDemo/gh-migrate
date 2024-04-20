@@ -126,6 +126,7 @@ gh migrate stats \
     --org "source-org2" \
     --before \
     --source \
+    --dry-run \
     --pat secret! \
 
 ##########################################
@@ -155,7 +156,8 @@ gh migrate stats \
     --org "source-org2" \
     --after \
     --source \
-    --pat secret \
+    --dry-run \
+    --pat secret
 
 ##########################################
 # Capture post-migration target stats
@@ -165,7 +167,8 @@ gh migrate stats \
     --org "org2-DRYRUN" \
     --after \
     --target \
-    --pat omg! \
+    --dry-run \
+    --pat secret
 
 ##########################################
 # Capture migration logs
@@ -173,7 +176,15 @@ gh migrate stats \
 gh migrate check \
     --org "org1-DRYRUN" \
     --org "org2-DRYRUN" \
-    --pat omg! \
+    --pat secret
+```
+
+After the dry-run completes, the following files will be created:
+
+```bash
+/logs/dry-run-before-source.csv
+/logs/dry-run-after-source.csv
+/logs/dry-run-after-target.csv
 ```
 
 For more detail on the process see: [link](docs/migration-process.md)
