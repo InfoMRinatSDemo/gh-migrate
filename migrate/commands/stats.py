@@ -6,7 +6,7 @@ import base64
 from functools import lru_cache
 from githubkit import GitHub
 
-from workbook import get_included_source_orgs
+from ..workbook import get_included_orgs
 
 
 @click.command()
@@ -17,14 +17,26 @@ from workbook import get_included_source_orgs
 @click.option("--source", is_flag=True, help="Source organization(s)")
 @click.option("--target", is_flag=True, help="Target organization(s)")
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
+@click.option(
+    "-w",
+    "--workbook",
+    "workbook_path",
+    required=False,
+    default="report/InfoMagnus - Migration Workbook.xlsx",
+)
 @click.argument("output_dir", required=False, default="logs")
-def stats(orgs, pat, before, after, source, target, dry_run, output_dir):
-    # Make sure flags have been provided
+def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, output_dir):
+    ##########################################
+    # Check command line flags
+    ##########################################
     if not (before ^ after):
         raise click.UsageError("You must supply either --before or --after")
     if not (source ^ target):
         raise click.UsageError("You must supply either --source or --target")
 
+    ##########################################
+    # Build output file name
+    ##########################################
     if before and source:
         output_file = "before-source.csv"
     elif before and target:
@@ -34,23 +46,29 @@ def stats(orgs, pat, before, after, source, target, dry_run, output_dir):
     elif after and target:
         output_file = "after-target.csv"
 
-    # If it's a dry-run create a subfolder
     if dry_run:
         output_dir = os.path.join(output_dir, "dry-run")
 
-    if orgs is None:
-        orgs = get_included_source_orgs()
+    ##########################################
+    # Get included source orgs from workbook
+    ##########################################
+    if orgs == ():
+        orgs = get_included_orgs("source_name", workbook_path)
 
-    # Create output directory if it doesn't exist
+    ##########################################
+    # Housekeeping
+    ##########################################
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     output_path = os.path.join("./", output_dir, output_file)
 
-    # Delete output file if it exists
     if os.path.exists(output_path):
         os.remove(output_path)
 
+    ##########################################
+    # The main event
+    ##########################################
     print(f"* Inventorying {orgs}")
 
     if orgs is not None:

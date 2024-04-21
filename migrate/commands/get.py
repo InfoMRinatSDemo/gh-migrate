@@ -8,58 +8,7 @@ from githubkit import GitHub
 import subprocess
 from datetime import datetime
 
-
-@click.group()
-def get():
-    pass
-
-
-@get.command()
-@click.option("--org", "orgs", multiple=True, required=False)
-@click.option("--pat", "pat", required=False)
-@click.option("-o", "--output", "output", required=True, default="logs/dry-run")
-def logs(orgs, pat, output):
-    print(f"* Checking {orgs}")
-
-    # Create output directory if it doesn't exist
-    if not os.path.exists(output):
-        os.makedirs(output)
-
-    org_timings = []
-    repo_timings = []
-    repo_results = []
-
-    if orgs is not None:
-        for org in orgs:
-            print(f"\n* Processing org {org}")
-            github = GitHub(pat)
-            (start_time, end_time, duration, timing, result) = process_org(
-                github, "target", org, output
-            )
-
-            org_timings.append(
-                {
-                    "org": org,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                    "duration (mins)": duration,
-                }
-            )
-
-            repo_timings.append(timing)
-            repo_results.append(result)
-
-    # Save the timings
-    org_timings_df = pd.DataFrame(org_timings)
-    org_timings_df.to_csv(f"{output}/org_timings.csv", index=False)
-
-    # Combine dataframes in arepo_timings and arepo_results
-    repo_timings_df = pd.concat(repo_timings)
-    repo_results_df = pd.concat(repo_results)
-
-    repo_timings_df.to_csv(f"{output}/repo_timings.csv", index=False)
-    repo_results_df.to_csv(f"{output}/repo_results.csv", index=False)
-
+from migrate.workbook import get_included_orgs
 
 ###############################################################################
 # We can grab the migration logs in the following ways:
@@ -77,10 +26,48 @@ def logs(orgs, pat, output):
 ###############################################################################
 
 
-def process_org(github: GitHub, source, org, output_dir):
-    """Process all repos in an org"""
+@click.group()
+def get():
+    pass
 
-    # Try cloning 'gei-migration-results' repo using 'gh repo clone'
+
+@get.command()
+@click.option("--org", "orgs", multiple=True, required=False)
+@click.option("--pat", "pat", required=False)
+@click.option(
+    "-w",
+    "--workbook",
+    "workbook_path",
+    required=False,
+    default="report/InfoMagnus - Migration Workbook.xlsx",
+)
+@click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
+@click.option("-o", "--output", "output", required=True, default="logs")
+def logs(orgs, pat, workbook_path, dry_run, output_dir):
+    print(f"* Checking {orgs}")
+
+    if dry_run:
+        output_dir = os.path.join(output_dir, "dry-run")
+
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    ##########################################
+    # Get included source orgs from workbook
+    ##########################################
+    if orgs == ():
+        orgs = get_included_orgs("source_name", workbook_path)
+
+    if orgs is not None:
+        for org in orgs:
+            print(f"\n* Processing org {org}")
+            github = GitHub(pat)
+            get_org_log(github, "target", org, output_dir)
+
+
+def get_org_log(github: GitHub, source, org, output_dir):
+    """Process all repos in an org"""
 
     output_dir = f"{output_dir}/{org}"
 
@@ -100,228 +87,3 @@ def process_org(github: GitHub, source, org, output_dir):
         print("Retrieved migration logs successfully!")
     else:
         print(f'Failed to retrieve migration logs: {result.stderr.decode("utf-8")}')
-
-    # Parse the organization migration log
-    (start_time, end_time, duration) = parse_org_log(output_dir)
-
-    # Parse the repository migration logs
-    (success_repo_timing, success_repo_results) = parse_repo_logs(
-        org, "success", f"./{output_dir}"
-    )
-    (fail_repo_timing, fail_repo_results) = parse_repo_logs(
-        org, "failure", f"./{output_dir}"
-    )
-
-    repo_timing = pd.concat([success_repo_timing, fail_repo_timing])
-    repo_results = pd.concat([success_repo_results, fail_repo_results])
-
-    return (start_time, end_time, duration, repo_timing, repo_results)
-
-
-def parse_repo_logs(org, type, output_dir):
-
-    timing = []
-    results = []
-
-    output_dir = f"{output_dir}/{type}"
-
-    # Return if output_dir doesn't exist
-    if not os.path.exists(output_dir):
-        return pd.DataFrame(timing), pd.DataFrame(results)
-
-    # Get all the directories in the output_dir
-    repos = [repo for repo in os.listdir(output_dir)]
-
-    for repo_log in repos:
-        # Open file and find lines starting with '['
-        with open(f"{output_dir}/{repo_log}", "r") as f:
-            lines = [line for line in f.readlines() if line.startswith("[")]
-
-        ############################################################
-        # Get repo migration timing
-        ############################################################
-
-        # We should *always* have a start line
-        start_line = [line for line in lines if "Migration started" in line]
-        assert len(start_line) == 1
-        start_line = start_line[0]
-
-        if type == "success":
-            end_line = [line for line in lines if "Migration complete" in line][0]
-        elif type == "failure":
-            end_line = [line for line in lines if "Migration failed" in line][0]
-
-        # Parse start time from start_line
-        start_time = start_line.split(" ")[0]
-        end_time = end_line.split(" ")[0]
-
-        # Remove '[' and ']'
-        start_time = start_time[1:-1]
-        end_time = end_time[1:-1]
-
-        # start_time contains a string like "2024-04-12T01:25:50Z"
-
-        start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-        end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
-
-        print(f"Repo: {repo_log}")
-
-        timing.append(
-            {
-                "org": org,
-                "repo": repo_log,
-                "start_time": start_time,
-                "end_time": end_time,
-                "duration (mins)": int((end_time - start_time).total_seconds() / 60),
-            }
-        )
-
-        ############################################################
-        # Get warnings or errors
-        ############################################################
-
-        warnings = [line for line in lines if "WARN" in line]
-        errors = [line for line in lines if "ERROR" in line]
-
-        if len(warnings) != 0:
-            for warning in warnings:
-                results.append(
-                    {
-                        "org": org,
-                        "repo": repo_log,
-                        "type": "WARN",
-                        "message": warning.strip(),
-                    }
-                )
-
-        if len(errors) != 0:
-            for error in errors:
-                results.append(
-                    {
-                        "org": org,
-                        "repo": repo_log,
-                        "type": "ERROR",
-                        "message": error.strip(),
-                    }
-                )
-
-    # Write timing_results to csv
-    timing_df = pd.DataFrame(timing)
-    # timing_df.to_csv(f"{org}_timing_results.csv", index=False)
-
-    # Write results to csv
-    results_df = pd.DataFrame(results)
-    # results_df.to_csv(f"{org}_results.csv", index=False)
-
-    return (timing_df, results_df)
-
-
-def parse_org_log(output_dir):
-
-    org_log = os.path.join("./", output_dir, "README.md")
-
-    # Open file and find lines starting with '['
-    with open(org_log, "r") as f:
-        lines = [line for line in f.readlines() if line.startswith("[")]
-
-    # Get line containing "Organization migrated started"
-    start_line = [line for line in lines if "Organization migration started" in line][0]
-    end_line = [line for line in lines if "Organization migration completed" in line][0]
-
-    # Parse start time from start_line
-    start_time = start_line.split(" ")[0]
-    end_time = end_line.split(" ")[0]
-
-    # Remove '[' and ']'
-    start_time = start_time[1:-1]
-    end_time = end_time[1:-1]
-
-    # start_time contains a string like "2024-04-12T01:25:50Z"
-
-    start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-    end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
-
-    return (start_time, end_time, int((end_time - start_time).total_seconds() / 60))
-
-
-def get_pat(type):
-    if type == "source":
-        return os.environ["GH_SOURCE_PAT"]
-    elif type == "target":
-        return os.environ["GH_TARGET_PAT"]
-    else:
-        raise ValueError('Type must be "source" or "target"')
-
-
-def get_issues(github, repo):
-    yield from get_nodes(
-        github,
-        "issues",
-        {
-            "owner": repo["owner"]["login"],
-            "name": repo["name"],
-            "pageSize": 100,
-            "endCursor": None,
-        },
-        ["repository", "issues"],
-    )
-
-
-def get_pulls(github, repo):
-    yield from get_nodes(
-        github,
-        "pulls",
-        {
-            "owner": repo["owner"]["login"],
-            "name": repo["name"],
-            "pageSize": 100,
-            "endCursor": None,
-        },
-        ["repository", "pullRequests"],
-    )
-
-
-def get_repos(github, org):
-    yield from get_nodes(
-        github,
-        "org-repos",
-        {"login": org, "pageSize": 10, "endCursor": None},
-        ["organization", "repositories"],
-    )
-
-
-def get_nodes(github, query_name, variables, page_path):
-    """Retrieves all nodes from a paginated GraphQL query"""
-
-    @lru_cache(maxsize=None)
-    def get_query(name):
-        with open(f"migrate/graphql/{name}.graphql") as f:
-            return f.read()
-
-    # https://stackoverflow.com/questions/71460721/best-way-to-get-nested-dictionary-items
-    def get_nested_item(d, key):
-        for level in key:
-            d = d[level]
-        return d
-
-    query = get_query(query_name)
-
-    while True:
-        response = github.graphql(query, variables=variables)
-
-        # Print errors and exit if any found
-        if "errors" in response:
-            for error in response["errors"]:
-                print(f"Error: {error['message']}")
-            return
-
-        items = get_nested_item(response, page_path)
-        for item in items["nodes"]:
-            yield item
-
-        # Exit if no more pages
-        if not items["pageInfo"]["hasNextPage"]:
-            break
-
-        # Otherwise, update the endCursor and continue
-        variables["endCursor"] = items["pageInfo"]["endCursor"]

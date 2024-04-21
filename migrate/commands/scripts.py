@@ -4,7 +4,7 @@ from jinja2 import Environment, FileSystemLoader
 from openpyxl import load_workbook
 import pandas as pd
 
-from ..workbook import get_included_source_orgs
+from ..workbook import get_included_orgs
 
 
 @click.group()
@@ -35,14 +35,16 @@ def render_template(template_name, **kwargs):
 ###############################
 @scripts.command()
 @click.argument(
-    "workbook", required=False, default="report/InfoMagnus - Migration Workbook.xlsx"
+    "-w",
+    required=False,
+    default="report/InfoMagnus - Migration Workbook.xlsx",
 )
-def dry_run(workbook):
+def dry_run(workbook_path):
     """
     Generate the dry-run script.
     """
 
-    orgs = get_included_source_orgs(workbook)
+    orgs = get_included_orgs("source_name", workbook_path)
     render_template("dry-run.sh.j2", orgs=orgs)
 
 

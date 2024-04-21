@@ -20,9 +20,9 @@ def initialize_workbook():
     workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
 
 
-def get_included_source_orgs(workbook_path):
+def get_included_orgs(org_type, workbook_path):
     # Load the Org Mappings
-    wb = load_workbook(workbook_path)
+    wb = load_workbook(workbook_path, data_only=True)
 
     ws = wb["Mapping - Org"]
 
@@ -30,13 +30,13 @@ def get_included_source_orgs(workbook_path):
     df = pd.DataFrame(data[1:], columns=data[0])
 
     # If column 2 isn't named 'exclude' return
-    if df.columns[2] != "exclude":
+    if df.columns[3] != "exclude":
         raise ValueError(
             "'Mapping - Org' column 2 must be named 'exclude'.  Stop messing with things!"
         )
 
     # Filter out excluded orgs
-    orgs = df[df["exclude"] == False]["source_name"].tolist()
+    orgs = df[df["exclude"] == False][org_type].tolist()
 
     if orgs == ():
         raise ValueError("No source orgs found in 'Mapping - Org'")
@@ -130,6 +130,23 @@ def add_inventory_worksheet(workbook, sheet_name, stats):
     worksheet.delete_rows(1, worksheet.max_row)
 
     write_table(worksheet, stats, "Inventory")
+
+
+def add_worksheet(workbook, sheet_name, stats):
+    # Delete the worksheet if it already exists
+    if sheet_name in workbook.sheetnames:
+        del workbook[sheet_name]
+
+    desired_index = workbook.sheetnames.index("Cover") + 1
+    worksheet = add_sheet(workbook, sheet_name, desired_index, "002060")
+
+    # Clear the contents of the worksheet
+    worksheet.delete_rows(1, worksheet.max_row)
+
+    # Create table name by removing spaces and adding underscores
+    table_name = sheet_name.replace(" ", "_")
+
+    write_table(worksheet, stats, table_name)
 
 
 def write_mappings_file(df, cols):

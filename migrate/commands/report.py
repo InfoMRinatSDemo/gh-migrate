@@ -3,90 +3,83 @@ import click
 import pandas as pd
 from datetime import datetime
 
+from openpyxl import load_workbook
+from ..workbook import get_included_orgs, add_worksheet
+
 
 @click.command()
-@click.argument("before-source", type=click.STRING)
-@click.argument("after-target", type=click.STRING)
-@click.argument("after-source", type=click.STRING)
-@click.argument("output", type=click.STRING)
-def report(before_source, after_target, after_source, output=None):
-    print("Diffing {} and {}".format(before_source, after_target))
+@click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
+@click.option(
+    "-w",
+    "--workbook",
+    "workbook_path",
+    required=False,
+    default="report/InfoMagnus - Migration Workbook.xlsx",
+)
+@click.argument("output_dir", type=click.STRING, required=False, default="logs")
+def report(dry_run, workbook_path, output_dir):
 
-    before_source_stats = pd.read_csv(before_source, dtype=str)
-    after_target_stats = pd.read_csv(after_target, dtype=str)
-    after_source_stats = pd.read_csv(after_source, dtype=str)
+    workbook = load_workbook(workbook_path)
 
-    ignore_cols = [
-        "createdAt",
-        "pushedAt",
-        "updatedAt",
-        "url",
-        "issues.comments.totalCount",
-        "issues.timelineItems.totalCount",
-    ]
-    before_source_stats = before_source_stats.drop(columns=ignore_cols)
-    after_target_stats = after_target_stats.drop(columns=ignore_cols)
-    after_source_stats = after_source_stats.drop(columns=ignore_cols)
+    if dry_run:
+        output_dir = os.path.join(output_dir, "dry-run")
 
-    compare_dfs(
-        "name", before_source_stats, after_target_stats, after_source_stats, output
-    )
+    orgs = get_included_orgs("dry_run_target_name", workbook_path)
 
+    ############################################################
+    # Parse the GEI logs and generate the GEI migration reports
+    ############################################################
+    generate_gei_reports(orgs, workbook, output_dir)
 
-def compare_dfs(key, source_df, target_df, context_df, output):
-    """
-    Compare the before_source and after_target dataframes and write the differences to file
-    """
+    ############################################################
+    # Parse the stats and generate the difference reports
+    ############################################################
 
-    def not_equal(val1, val2):
-        val1 = val1.lower() if isinstance(val1, str) else val1
-        val2 = val2.lower() if isinstance(val2, str) else val2
-
-        if pd.isna(val1) and pd.isna(val2):
-            return False
-        if pd.isna(val1) or pd.isna(val2):
-            return True
-        elif val1 != val2:
-            return True
-        else:
-            return False
-
-    def get_row(key, df, name):
-        return df[df[key] == name]
-
-    diffs = []
-
-    for row in source_df.itertuples():
-        source_row = get_row(key, source_df, row.name)
-        target_row = get_row(key, target_df, row.name)
-        context_row = get_row(key, context_df, row.name)
-
-        if source_row.equals(target_row):
-            continue
-        elif source_row.empty or target_row.empty:
-            continue
-        else:
-            for col in source_row.columns:
-                if not_equal(source_row[col].values[0], target_row[col].values[0]):
-                    diffs.append(
-                        {
-                            "source_name": f"{source_row['owner.login'].values[0]}/{source_row['name'].values[0]}",
-                            "target_name": f"{target_row['owner.login'].values[0]}/{target_row['name'].values[0]}",
-                            "column": col,
-                            "source_value": source_row[col].values[0],
-                            "target_value": target_row[col].values[0],
-                            "context_value": context_row[col].values[0],
-                            "source_date": source_row["Inventoried"].values[0],
-                            "target_date": target_row["Inventoried"].values[0],
-                            "context_date": context_row["Inventoried"].values[0],
-                        }
-                    )
-
-    # Write the differences to a file
-    pd.DataFrame(diffs).to_csv(output, index=False)
+    workbook.save(workbook_path)
 
 
-def parse_org_log(org, output_dir):
+def generate_gei_reports(orgs, workbook, logs_dir):
+
+    org_timings = []
+    repo_timings = []
+    repo_results = []
+
+    for org in orgs:
+        print(f"\n* Processing org {org}")
+        (start_time, end_time, duration, repo_timing, repo_result) = (
+            parse_migration_logs(org, logs_dir)
+        )
+
+        org_timings.append(
+            {
+                "org": org,
+                "start_time": start_time,
+                "end_time": end_time,
+                "duration (mins)": duration,
+            }
+        )
+        repo_timings.append(repo_timing)
+        repo_results.append(repo_result)
+
+    import pdb
+
+    org_timings_df = pd.DataFrame(org_timings)
+    add_worksheet(workbook, "Org Timings", org_timings_df)
+    # org_timings_df.to_csv(f"{output}/org_timings.csv", index=False)
+
+    # # Combine dataframes in arepo_timings and arepo_results
+    repo_timings_df = pd.concat(repo_timings)
+    repo_results_df = pd.concat(repo_results)
+    add_worksheet(workbook, "Repo Timings", repo_timings_df)
+    add_worksheet(workbook, "Repo Results", repo_results_df)
+    # repo_timings_df.to_csv(f"{output}/repo_timings.csv", index=False)
+    # repo_results_df.to_csv(f"{output}/repo_results.csv", index=False)
+    pdb.set_trace()
+
+
+def parse_migration_logs(org, output_dir):
+    output_dir = f"{output_dir}/{org}"
+
     # Parse the organization migration log
     (start_time, end_time, duration) = parse_org_log(output_dir)
 
@@ -102,6 +95,34 @@ def parse_org_log(org, output_dir):
     repo_results = pd.concat([success_repo_results, fail_repo_results])
 
     return (start_time, end_time, duration, repo_timing, repo_results)
+
+
+def parse_org_log(output_dir):
+
+    org_log = os.path.join("./", output_dir, "README.md")
+
+    # Open file and find lines starting with '['
+    with open(org_log, "r") as f:
+        lines = [line for line in f.readlines() if line.startswith("[")]
+
+    # Get line containing "Organization migrated started"
+    start_line = [line for line in lines if "Organization migration started" in line][0]
+    end_line = [line for line in lines if "Organization migration completed" in line][0]
+
+    # Parse start time from start_line
+    start_time = start_line.split(" ")[0]
+    end_time = end_line.split(" ")[0]
+
+    # Remove '[' and ']'
+    start_time = start_time[1:-1]
+    end_time = end_time[1:-1]
+
+    # start_time contains a string like "2024-04-12T01:25:50Z"
+
+    start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+    end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
+
+    return (start_time, end_time, int((end_time - start_time).total_seconds() / 60))
 
 
 def parse_repo_logs(org, type, output_dir):
@@ -202,34 +223,6 @@ def parse_repo_logs(org, type, output_dir):
     return (timing_df, results_df)
 
 
-def parse_org_log(output_dir):
-
-    org_log = os.path.join("./", output_dir, "README.md")
-
-    # Open file and find lines starting with '['
-    with open(org_log, "r") as f:
-        lines = [line for line in f.readlines() if line.startswith("[")]
-
-    # Get line containing "Organization migrated started"
-    start_line = [line for line in lines if "Organization migration started" in line][0]
-    end_line = [line for line in lines if "Organization migration completed" in line][0]
-
-    # Parse start time from start_line
-    start_time = start_line.split(" ")[0]
-    end_time = end_line.split(" ")[0]
-
-    # Remove '[' and ']'
-    start_time = start_time[1:-1]
-    end_time = end_time[1:-1]
-
-    # start_time contains a string like "2024-04-12T01:25:50Z"
-
-    start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-    end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
-
-    return (start_time, end_time, int((end_time - start_time).total_seconds() / 60))
-
-
 def get_pat(type):
     if type == "source":
         return os.environ["GH_SOURCE_PAT"]
@@ -311,3 +304,79 @@ def get_nodes(github, query_name, variables, page_path):
 
         # Otherwise, update the endCursor and continue
         variables["endCursor"] = items["pageInfo"]["endCursor"]
+
+
+def compare_stats(before_source, after_target, after_source, output):
+    before_source_stats = pd.read_csv(before_source, dtype=str)
+    after_target_stats = pd.read_csv(after_target, dtype=str)
+    after_source_stats = pd.read_csv(after_source, dtype=str)
+
+    ignore_cols = [
+        "createdAt",
+        "pushedAt",
+        "updatedAt",
+        "url",
+        "issues.comments.totalCount",
+        "issues.timelineItems.totalCount",
+    ]
+    before_source_stats = before_source_stats.drop(columns=ignore_cols)
+    after_target_stats = after_target_stats.drop(columns=ignore_cols)
+    after_source_stats = after_source_stats.drop(columns=ignore_cols)
+
+    return compare_dfs(
+        "name", before_source_stats, after_target_stats, after_source_stats, output
+    )
+
+
+def compare_dfs(key, source_df, target_df, context_df, output):
+    """
+    Compare the before_source and after_target dataframes and write the differences to file
+    """
+
+    def not_equal(val1, val2):
+        val1 = val1.lower() if isinstance(val1, str) else val1
+        val2 = val2.lower() if isinstance(val2, str) else val2
+
+        if pd.isna(val1) and pd.isna(val2):
+            return False
+        if pd.isna(val1) or pd.isna(val2):
+            return True
+        elif val1 != val2:
+            return True
+        else:
+            return False
+
+    def get_row(key, df, name):
+        return df[df[key] == name]
+
+    diffs = []
+
+    for row in source_df.itertuples():
+        source_row = get_row(key, source_df, row.name)
+        target_row = get_row(key, target_df, row.name)
+        context_row = get_row(key, context_df, row.name)
+
+        if source_row.equals(target_row):
+            continue
+        elif source_row.empty or target_row.empty:
+            continue
+        else:
+            for col in source_row.columns:
+                if not_equal(source_row[col].values[0], target_row[col].values[0]):
+                    diffs.append(
+                        {
+                            "source_name": f"{source_row['owner.login'].values[0]}/{source_row['name'].values[0]}",
+                            "target_name": f"{target_row['owner.login'].values[0]}/{target_row['name'].values[0]}",
+                            "column": col,
+                            "source_value": source_row[col].values[0],
+                            "target_value": target_row[col].values[0],
+                            "context_value": context_row[col].values[0],
+                            "source_date": source_row["Inventoried"].values[0],
+                            "target_date": target_row["Inventoried"].values[0],
+                            "context_date": context_row["Inventoried"].values[0],
+                        }
+                    )
+
+    # Write the differences to a file
+    # pd.DataFrame(diffs).to_csv(output, index=False)
+    return pd.DataFrame(diffs)

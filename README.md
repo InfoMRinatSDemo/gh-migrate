@@ -118,16 +118,12 @@ The dry-run script is placed in `scripts/dry-run.sh`, and looks like:
 ```bash
 #!/bin/bash
 
+source .env.pats
+
 ##########################################
 # Capture pre-migration source stats
 ##########################################
-gh migrate stats \
-    --org "source-org1" \
-    --org "source-org2" \
-    --before \
-    --source \
-    --dry-run \
-    --pat secret! \
+gh migrate stats --before --source --dry-run
 
 ##########################################
 # Migrate!
@@ -151,40 +147,30 @@ gh gei migrate-org \
 ##########################################
 # Capture post-migration source stats
 ##########################################
-gh migrate stats \
-    --org "source-org1" \
-    --org "source-org2" \
-    --after \
-    --source \
-    --dry-run \
-    --pat secret
+gh migrate stats --after --source --dry-run
 
 ##########################################
 # Capture post-migration target stats
 ##########################################
-gh migrate stats \
-    --org "org1-DRYRUN" \
-    --org "org2-DRYRUN" \
-    --after \
-    --target \
-    --dry-run \
-    --pat secret
+gh migrate stats --after --target --dry-run
 
 ##########################################
-# Capture migration logs
+# Get migration logs
 ##########################################
-gh migrate check \
-    --org "org1-DRYRUN" \
-    --org "org2-DRYRUN" \
-    --pat secret
+gh migrate get logs --dry-run
+
+##########################################
+# Generate post-migration report
+##########################################
+gh migrate report --dry-run
 ```
 
 After the dry-run completes, the following files will be created:
 
 ```bash
-/logs/dry-run-before-source.csv
-/logs/dry-run-after-source.csv
-/logs/dry-run-after-target.csv
+/logs/dry-run/before-source.csv
+/logs/dry-run/after-source.csv
+/logs/dry-run/after-target.csv
 ```
 
 For more detail on the process see: [link](docs/migration-process.md)
