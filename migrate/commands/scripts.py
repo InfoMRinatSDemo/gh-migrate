@@ -1,7 +1,6 @@
 import os
 import click
 from jinja2 import Environment, FileSystemLoader
-from openpyxl import load_workbook
 import pandas as pd
 
 from ..workbook import get_included_orgs

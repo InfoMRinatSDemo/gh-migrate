@@ -3,8 +3,7 @@ import click
 import pandas as pd
 from datetime import datetime
 
-from openpyxl import load_workbook
-from ..workbook import get_included_orgs, add_worksheet
+from ..workbook import *
 
 
 @click.command()
@@ -19,7 +18,7 @@ from ..workbook import get_included_orgs, add_worksheet
 @click.argument("output_dir", type=click.STRING, required=False, default="logs")
 def report(dry_run, workbook_path, output_dir):
 
-    workbook = load_workbook(workbook_path)
+    workbook = get_workbook(workbook_path)
 
     target_column = "target_name"
 

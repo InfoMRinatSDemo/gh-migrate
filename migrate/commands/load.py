@@ -2,7 +2,6 @@ import os
 import click
 import pandas as pd
 
-from openpyxl import load_workbook
 from ..workbook import *
 
 
@@ -24,9 +23,7 @@ def load():
 def inventory(before_source, before_target, workbook_path):
     "" ""
 
-    workbook = load_workbook(workbook_path)
-    workbook.filename = workbook_path
-    print(f"** Found workbook at: {workbook_path}")
+    workbook = get_workbook(workbook_path)
 
     source_stats = pd.read_csv(
         before_source,
@@ -49,4 +46,4 @@ def inventory(before_source, before_target, workbook_path):
     print(f"*** Adding org mapping")
     add_org_mapping(workbook, "Mapping - Org", source_stats)
 
-    print(f"*** Migratino workbook updated")
+    print(f"*** Migration workbook updated")

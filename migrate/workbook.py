@@ -20,6 +20,14 @@ def initialize_workbook():
     workbook.save(os.path.join("report", "InfoMagnus - Migration Workbook.xlsx"))
 
 
+def get_workbook(workbook_path):
+    workbook = load_workbook(workbook_path)
+    workbook.filename = workbook_path
+    print(f"** Found workbook at: {workbook_path}")
+
+    return workbook
+
+
 def get_included_orgs(org_type, workbook_path):
     # Load the Org Mappings
     wb = load_workbook(workbook_path, data_only=True)
@@ -164,7 +172,6 @@ def write_mappings_file(df, cols):
         raise ValueError('Columns 0 and 1 must be "name"')
 
     df.columns = cols
-    # df.to_csv(filename, index=False)
     return df
 
 
