@@ -53,7 +53,13 @@ def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, outp
     # Get included source orgs from workbook
     ##########################################
     if orgs == ():
-        orgs = get_included_orgs("source_name", workbook_path)
+        if source:
+            orgs = get_included_orgs("source_name", workbook_path)
+        elif target:
+            if dry_run:
+                orgs = get_included_orgs("dry_run_target_name", workbook_path)
+            else:
+                orgs = get_included_orgs("target_name", workbook_path)
 
     ##########################################
     # Housekeeping

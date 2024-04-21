@@ -43,27 +43,27 @@ def get():
 )
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
 @click.option("-o", "--output", "output", required=True, default="logs")
-def logs(orgs, pat, workbook_path, dry_run, output_dir):
+def logs(orgs, pat, workbook_path, dry_run, output):
     print(f"* Checking {orgs}")
 
     if dry_run:
-        output_dir = os.path.join(output_dir, "dry-run")
+        output = os.path.join(output, "dry-run")
 
     # Create output directory if it doesn't exist
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if not os.path.exists(output):
+        os.makedirs(output)
 
     ##########################################
     # Get included source orgs from workbook
     ##########################################
     if orgs == ():
-        orgs = get_included_orgs("source_name", workbook_path)
+        orgs = get_included_orgs("dry_run_target_name", workbook_path)
 
     if orgs is not None:
         for org in orgs:
             print(f"\n* Processing org {org}")
             github = GitHub(pat)
-            get_org_log(github, "target", org, output_dir)
+            get_org_log(github, "target", org, output)
 
 
 def get_org_log(github: GitHub, source, org, output_dir):

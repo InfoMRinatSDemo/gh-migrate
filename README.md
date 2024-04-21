@@ -52,13 +52,7 @@ Store the tokens in your [Bitwarden](https://bitwarden.com/) repository.
 In this step we generate inventories of the source enterprise:
 
 ```bash
-gh migrate stats \
-    --org source-org-1 \
-    --org source-org-2 \
-    ...
-    --before \
-    --source \
-    --pat <source-org-PAT>
+gh migrate stats --before --source
 ```
 
 If the target enterprise is an existing, production environment, then it's important to generate an inventory of it.
@@ -66,16 +60,10 @@ If the target enterprise is an existing, production environment, then it's impor
 This serves as a snapshot and baseline of the client's landscape prior to our engagement.  It is also useful in debugging, triaging, or even rolling-back an engagement.
 
 ```bash
-gh migrate stats \
-    --org target-org-1 \
-    --org target-org-2 \
-    ...
-    --before \
-    --target \
-    --pat <target-org-PAT> \
+gh migrate stats --before --target
 ```
 
-### Step 3: Dry-Run Planning
+### Step 4: Dry-Run Planning
 
 With the inventories gathered, we can begin planning the dry-run, and ultimately the production migration.
 
@@ -86,26 +74,37 @@ gh migrate load inventory
 ```
 
 This will create three new sheets:
+- Pre-migration Report
+- Mapping - Org
+- Inventory - Source Repos
+- Inventory - Target Repos (optional)
 
 #### Pre-migration Report
 
 ![alt text](docs/images/workbook-pre-migration-report.png)
 
-The pre-migration report is used to identify potentially problematic repositories based on our past engagements.
-
-There are typically:
-- Repositories larger than 5GB
+The pre-migration report is used to identify the following repositories that are:
+- problematic based on our past engagements
+    - larger than 5GB
+    - with more than 10,000 PRs
+    - ...
+- use features that are not migrated
+    - so we can send targetted coms to repo-owners
+- not actively used
+    - these can be migrated first, as they are relatively low-risk
 
 For more details see...
 
 #### Mapping - Org
 
-...
+![alt text](docs/images/workbook-mapping-org.png)
+
+This sheet is used to document the desired names for the target-state organizations and the name used for the dry-run.
 
 #### Inventory - Source Repos
-...
+![alt text](docs/images/workbook-source-repo-inventory.png)
 
-### Step 4: Dry-Run Execution
+### Step 5: Dry-Run Execution
 
 Once you've identified which organizations will be part of the dry-run, you can generate the dry-run migration scripts:
 
@@ -131,7 +130,7 @@ gh migrate stats --before --source --dry-run
 gh gei migrate-org \
     --github-target-enterprise  \
     --github-source-org source-org1 \
-    --github-target-org source-org1-DRYRUN \
+    --github-target-org target-org1-DRYRUN \
     --github-source-pat secret \
     --github-target-pat secret \
     --verbose
@@ -139,7 +138,7 @@ gh gei migrate-org \
 gh gei migrate-org \
     --github-target-enterprise  \
     --github-source-org source-org2 \
-    --github-target-org source-org2-DRYRUN \
+    --github-target-org target-org2-DRYRUN \
     --github-source-pat secret \
     --github-target-pat secret \
     --verbose
@@ -171,11 +170,19 @@ After the dry-run completes, the following files will be created:
 /logs/dry-run/before-source.csv
 /logs/dry-run/after-source.csv
 /logs/dry-run/after-target.csv
+/logs/dry-run/target-org1-DRYRUN
+/logs/dry-run/target-org2-DRYRUN
 ```
+
+And the migration workbook will contain:
+- Dry-Run Report
+- Dry-Run Repo Results
+- Dry-Run Org Results
+
 
 For more detail on the process see: [link](docs/migration-process.md)
 
-### Step 5: Dry-Run Analysis
+### Step 6: Dry-Run Analysis
 
 Analysis of the dry-run takes two steps:
 

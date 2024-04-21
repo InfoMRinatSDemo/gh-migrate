@@ -21,19 +21,30 @@ def report(dry_run, workbook_path, output_dir):
 
     workbook = load_workbook(workbook_path)
 
+    target_column = "target_name"
+
     if dry_run:
         output_dir = os.path.join(output_dir, "dry-run")
+        target_column = "dry_run_target_name"
 
-    orgs = get_included_orgs("dry_run_target_name", workbook_path)
+    orgs = get_included_orgs(target_column, workbook_path)
 
     ############################################################
     # Parse the GEI logs and generate the GEI migration reports
     ############################################################
-    generate_gei_reports(orgs, workbook, output_dir)
+    (org_timings, repo_timings, repo_results) = generate_gei_reports(
+        orgs, workbook, output_dir
+    )
+    add_worksheet(workbook, "Org Timings", org_timings)
+    add_worksheet(workbook, "Repo Timings", repo_timings)
+    add_worksheet(workbook, "Repo Results", repo_results)
 
     ############################################################
-    # Parse the stats and generate the difference reports
+    # Parse the `gh migrate stats` results and report any
+    # differences between the source and target orgs
     ############################################################
+    stats = generate_stats_report(workbook, output_dir)
+    add_worksheet(workbook, "Post-Migration Report", stats)
 
     workbook.save(workbook_path)
 
@@ -61,20 +72,11 @@ def generate_gei_reports(orgs, workbook, logs_dir):
         repo_timings.append(repo_timing)
         repo_results.append(repo_result)
 
-    import pdb
-
     org_timings_df = pd.DataFrame(org_timings)
-    add_worksheet(workbook, "Org Timings", org_timings_df)
-    # org_timings_df.to_csv(f"{output}/org_timings.csv", index=False)
-
-    # # Combine dataframes in arepo_timings and arepo_results
     repo_timings_df = pd.concat(repo_timings)
     repo_results_df = pd.concat(repo_results)
-    add_worksheet(workbook, "Repo Timings", repo_timings_df)
-    add_worksheet(workbook, "Repo Results", repo_results_df)
-    # repo_timings_df.to_csv(f"{output}/repo_timings.csv", index=False)
-    # repo_results_df.to_csv(f"{output}/repo_results.csv", index=False)
-    pdb.set_trace()
+
+    return (org_timings_df, repo_timings_df, repo_results_df)
 
 
 def parse_migration_logs(org, output_dir):
@@ -214,99 +216,19 @@ def parse_repo_logs(org, type, output_dir):
 
     # Write timing_results to csv
     timing_df = pd.DataFrame(timing)
-    # timing_df.to_csv(f"{org}_timing_results.csv", index=False)
 
     # Write results to csv
     results_df = pd.DataFrame(results)
-    # results_df.to_csv(f"{org}_results.csv", index=False)
 
     return (timing_df, results_df)
 
 
-def get_pat(type):
-    if type == "source":
-        return os.environ["GH_SOURCE_PAT"]
-    elif type == "target":
-        return os.environ["GH_TARGET_PAT"]
-    else:
-        raise ValueError('Type must be "source" or "target"')
+def generate_stats_report(workbook, output):
 
+    before_source = os.path.join(output, "before-source.csv")
+    after_target = os.path.join(output, "after-target.csv")
+    after_source = os.path.join(output, "after-source.csv")
 
-def get_issues(github, repo):
-    yield from get_nodes(
-        github,
-        "issues",
-        {
-            "owner": repo["owner"]["login"],
-            "name": repo["name"],
-            "pageSize": 100,
-            "endCursor": None,
-        },
-        ["repository", "issues"],
-    )
-
-
-def get_pulls(github, repo):
-    yield from get_nodes(
-        github,
-        "pulls",
-        {
-            "owner": repo["owner"]["login"],
-            "name": repo["name"],
-            "pageSize": 100,
-            "endCursor": None,
-        },
-        ["repository", "pullRequests"],
-    )
-
-
-def get_repos(github, org):
-    yield from get_nodes(
-        github,
-        "org-repos",
-        {"login": org, "pageSize": 10, "endCursor": None},
-        ["organization", "repositories"],
-    )
-
-
-def get_nodes(github, query_name, variables, page_path):
-    """Retrieves all nodes from a paginated GraphQL query"""
-
-    @lru_cache(maxsize=None)
-    def get_query(name):
-        with open(f"migrate/graphql/{name}.graphql") as f:
-            return f.read()
-
-    # https://stackoverflow.com/questions/71460721/best-way-to-get-nested-dictionary-items
-    def get_nested_item(d, key):
-        for level in key:
-            d = d[level]
-        return d
-
-    query = get_query(query_name)
-
-    while True:
-        response = github.graphql(query, variables=variables)
-
-        # Print errors and exit if any found
-        if "errors" in response:
-            for error in response["errors"]:
-                print(f"Error: {error['message']}")
-            return
-
-        items = get_nested_item(response, page_path)
-        for item in items["nodes"]:
-            yield item
-
-        # Exit if no more pages
-        if not items["pageInfo"]["hasNextPage"]:
-            break
-
-        # Otherwise, update the endCursor and continue
-        variables["endCursor"] = items["pageInfo"]["endCursor"]
-
-
-def compare_stats(before_source, after_target, after_source, output):
     before_source_stats = pd.read_csv(before_source, dtype=str)
     after_target_stats = pd.read_csv(after_target, dtype=str)
     after_source_stats = pd.read_csv(after_source, dtype=str)
@@ -378,5 +300,4 @@ def compare_dfs(key, source_df, target_df, context_df, output):
                     )
 
     # Write the differences to a file
-    # pd.DataFrame(diffs).to_csv(output, index=False)
     return pd.DataFrame(diffs)

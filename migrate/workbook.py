@@ -159,6 +159,7 @@ def write_mappings_file(df, cols):
     if cols[0] == "name" and cols[1] == "name":
         cols[0] = "source_name"
         cols[1] = "target_name"
+        cols[2] = "dry_run_target_name"
     else:
         raise ValueError('Columns 0 and 1 must be "name"')
 
@@ -188,7 +189,9 @@ def add_org_mapping(workbook, sheet_name, stats):
     # Remove dupes from stats
     stats = stats.drop_duplicates(subset=["name"])
 
-    stats = write_mappings_file(stats, ["name", "name", "exclude", "exclude_reason"])
+    stats = write_mappings_file(
+        stats, ["name", "name", "name", "exclude", "exclude_reason"]
+    )
 
     # Create org mapping table
     write_table(worksheet, stats, "Mapping_Org")
