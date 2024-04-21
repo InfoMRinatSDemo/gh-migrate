@@ -1,6 +1,6 @@
 import click
 from .commands.start import start
-from .commands.get import get
+from .commands.report import report
 from .commands.stats import stats
 from .commands.load import load
 from .commands.scripts import scripts
@@ -13,7 +13,7 @@ def cli():
 
 
 cli.add_command(start)
-cli.add_command(get)
+cli.add_command(report)
 cli.add_command(stats)
 cli.add_command(load)
 cli.add_command(scripts)
