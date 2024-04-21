@@ -183,6 +183,8 @@ def add_org_mapping(workbook, sheet_name, stats):
     # TODO: Clean up this mess...
     stats = stats.rename(columns={"name": "_name"})
     stats = stats.rename(columns={"owner.login": "name"})
+    stats["wave"] = 0
+    stats["order"] = 0
     stats["exclude"] = False
     stats["exclude_reason"] = ""
 
@@ -190,7 +192,7 @@ def add_org_mapping(workbook, sheet_name, stats):
     stats = stats.drop_duplicates(subset=["name"])
 
     stats = write_mappings_file(
-        stats, ["name", "name", "name", "exclude", "exclude_reason"]
+        stats, ["name", "name", "name", "wave", "order", "exclude", "exclude_reason"]
     )
 
     # Create org mapping table
