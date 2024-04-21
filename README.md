@@ -41,7 +41,7 @@ The migration workbook will contain a single sheet, Cover, which you should use 
 
 Personal Access Tokens (PATs) for both the source and target enterprise are required to use `gh migrate`.
 
-The PATs must be of type "classic" with the following permissions: [link](images/pat-perms.png)
+The PATs must be of type "classic" with the following permissions: [link](docs/personal-access-tokens.md)
 
 Work with your client to generate these tokens.
 
