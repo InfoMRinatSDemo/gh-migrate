@@ -2,7 +2,7 @@ import os
 import click
 import pandas as pd
 
-from migrate.version import checkpoint_file
+from migrate.version import checkpoint_file, snapshot_before_after
 
 from ..workbook import *
 
@@ -22,10 +22,9 @@ def load():
     required=False,
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
+@snapshot_before_after()
 def inventory(before_source, before_target, workbook_path):
     "" ""
-
-    checkpoint_file(workbook_path, f"LOAD: Saving old {workbook_path}")
 
     workbook = get_workbook(workbook_path)
 
@@ -50,5 +49,4 @@ def inventory(before_source, before_target, workbook_path):
     print(f"*** Adding org mapping")
     add_org_mapping(workbook, "Mapping - Org", source_stats)
 
-    checkpoint_file(workbook_path, f"LOAD: Saving new {workbook_path}")
     print(f"*** Migration workbook updated")

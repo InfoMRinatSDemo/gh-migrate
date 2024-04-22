@@ -26,6 +26,7 @@ from ..workbook import get_included_orgs
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.argument("output_dir", required=False, default="logs")
+@snapshot_before_after()
 def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, output_dir):
     ##########################################
     # Check command line fslags
