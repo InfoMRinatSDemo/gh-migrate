@@ -30,8 +30,10 @@ def before_and_after_command(message):
 
             # Check if engagement branch already exists
             if "engagement" in repo.heads:
+                print("*** Switching to engagement branch")
                 repo.heads.engagement.checkout()
             else:
+                print("*** Creating engagement branch")
                 repo.create_head("engagement")
 
             # Save existing workbook before re-initializing
