@@ -22,7 +22,7 @@ def checkpoint_file(file_path, message):
         repo.index.commit(message)
 
 
-def snapshot_before_after(message):
+def snapshot_before_after():
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -37,15 +37,19 @@ def snapshot_before_after(message):
                 repo.create_head("engagement")
                 repo.heads.engagement.checkout()
 
-            # Save existing workbook before re-initializing
-            if os.path.exists(message):
-                repo.index.add([message])
-                repo.index.commit(f"{func.__name__}: Before snapshot - {message}")
+            # Commit all untracked and modified files
+            untracked_files = repo.untracked_files
+            modified_files = [item.a_path for item in repo.index.diff(None)]
+            repo.index.add(untracked_files + modified_files)
+            repo.index.commit(f"{func.__name__}: Before snapshot")
 
             result = func(*args, **kwargs)
 
-            repo.index.add([message])
-            repo.index.commit(f"{func.__name__}: After snapshot - {message}")
+            # Commit all untracked and modified files
+            untracked_files = repo.untracked_files
+            modified_files = [item.a_path for item in repo.index.diff(None)]
+            repo.index.add(untracked_files + modified_files)
+            repo.index.commit(f"{func.__name__}: After snapshot")
 
             return result
 

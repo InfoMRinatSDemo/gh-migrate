@@ -6,7 +6,7 @@ from migrate.version import snapshot_before_after
 
 
 @click.command()
-@snapshot_before_after(["./report/InfoMagnus - Migration Workbook.xlsx"])
+@snapshot_before_after()
 def start():
 
     print(f"*** Initializing migration workbook")
