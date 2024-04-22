@@ -25,6 +25,8 @@ def load():
 def inventory(before_source, before_target, workbook_path):
     "" ""
 
+    checkpoint_file(workbook_path, f"LOAD: Saving old {workbook_path}")
+
     workbook = get_workbook(workbook_path)
 
     source_stats = pd.read_csv(
@@ -48,4 +50,5 @@ def inventory(before_source, before_target, workbook_path):
     print(f"*** Adding org mapping")
     add_org_mapping(workbook, "Mapping - Org", source_stats)
 
+    checkpoint_file(workbook_path, f"LOAD: Saving new {workbook_path}")
     print(f"*** Migration workbook updated")

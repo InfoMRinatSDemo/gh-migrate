@@ -6,11 +6,21 @@ Specifically, the tool has been used to help plan and execute the StreamCo and C
 
 ## Overview
 
-`gh migrate` consists of four commands:
-- `gh migrate stats` -
-- `gh migrate check` -
-- `gh migrate diff` -
-- `gh migrate plan` -
+`gh migrate` consists of the following commands:
+- `start` - Creates a migration workbook
+- `stats` - Captures stats on the source/target environments
+- `load` - Load `.csv` files into migration workbook
+- `get logs` - Download migration logs
+- `report` - Generate reports
+
+## Philosophy
+
+The `gh migrate` workflow, outlined below, leverages pre-defined filepaths and version control to reduce the overhead of managing stats and logs across the pre-migration, dry-run(s), and production migration(s) phase(s).
+
+The workflow creates a branch named `engagement`, which all steps work out of.
+
+Each command generates a well-named commit, which allows you to keep track of files throughout the engagement.
+
 
 ## Installation
 
@@ -24,7 +34,7 @@ During an engagement the tool is used as follows:
 
 ### Step 1: Start
 
-Begin a migration by forking this repository and `git clone`ing a local copy.
+Begin a migration by forking this repository and `git clone`'ing a local copy.
 
 Type `gh migrate start` to create a "migration workbook".
 
@@ -49,11 +59,21 @@ Store the tokens in your [Bitwarden](https://bitwarden.com/) repository.
 
 ### Step 3: Discovery
 
+#### Source Environment(s)
+
 In this step we generate inventories of the source enterprise:
 
 ```bash
-gh migrate stats --before --source
+gh migrate stats \
+    --before \
+    --source \
+    --org source-org1 \
+    --org source-org2 \
+    ...
+    --pat <source-org-PAT>
 ```
+
+#### Target Environment(s)
 
 If the target enterprise is an existing, production environment, then it's important to generate an inventory of it.
 

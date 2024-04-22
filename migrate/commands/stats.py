@@ -70,6 +70,8 @@ def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, outp
 
     output_path = os.path.join("./", output_dir, output_file)
 
+    checkpoint_file(output_path, f"STATS: Saving old {output_path}")
+
     if os.path.exists(output_path):
         os.remove(output_path)
 
@@ -83,6 +85,8 @@ def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, outp
             print(f"\n* Processing org {org}")
             github = GitHub(pat)
             process_org(github, "source", org, output_path)
+
+    checkpoint_file(output_path, f"STATS: Saving new {output_path}")
 
 
 def process_org(github, source, org, output_dir):

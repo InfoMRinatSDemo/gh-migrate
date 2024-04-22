@@ -46,8 +46,13 @@ def dry_run(workbook_path):
     Generate the dry-run script.
     """
 
+    checkpoint_file(workbook_path, f"SCRIPTS: Saving old {workbook_path}")
+    checkpoint_file("./scripts/dry-run.sh", f"SCRIPTS: Saving old dry-run.sh")
+
     orgs = get_included_orgs("source_name", workbook_path)
     render_template("dry-run.sh.j2", orgs=orgs)
+
+    checkpoint_file("./scripts/dry-run.sh", f"SCRIPTS: Saving new dry-run.sh")
 
 
 ###############################
