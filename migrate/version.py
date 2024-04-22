@@ -35,16 +35,17 @@ def before_and_after_command(message):
             else:
                 print("*** Creating engagement branch")
                 repo.create_head("engagement")
+                repo.heads.engagement.checkout()
 
             # Save existing workbook before re-initializing
             if os.path.exists(message):
-                repo.index.add(message)
-                repo.index.commit(f"{func.__name__}: Before snapshot")
+                repo.index.add([message])
+                repo.index.commit(f"{func.__name__}: Before snapshot - {message}")
 
             result = func(*args, **kwargs)
 
-            repo.index.add(message)
-            repo.index.commit(f"{func.__name__}: After snapshot")
+            repo.index.add([message])
+            repo.index.commit(f"{func.__name__}: After snapshot - {message}")
 
             return result
 
