@@ -22,7 +22,7 @@ def checkpoint_file(file_path, message):
         repo.index.commit(message)
 
 
-def before_and_after_command(message):
+def snapshot_before_after(message):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

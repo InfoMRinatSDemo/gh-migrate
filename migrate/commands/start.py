@@ -2,11 +2,11 @@ import click
 
 from ..workbook import *
 from git import Repo
-from migrate.version import before_and_after_command
+from migrate.version import snapshot_before_after
 
 
 @click.command()
-@before_and_after_command("./report/InfoMagnus - Migration Workbook.xlsx")
+@snapshot_before_after(["./report/InfoMagnus - Migration Workbook.xlsx"])
 def start():
 
     print(f"*** Initializing migration workbook")
