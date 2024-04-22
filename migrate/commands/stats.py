@@ -5,6 +5,7 @@ import os
 import base64
 from functools import lru_cache
 from githubkit import GitHub
+from ..version import *
 
 from ..workbook import get_included_orgs
 
@@ -22,12 +23,12 @@ from ..workbook import get_included_orgs
     "--workbook",
     "workbook_path",
     required=False,
-    default="report/InfoMagnus - Migration Workbook.xlsx",
+    default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.argument("output_dir", required=False, default="logs")
 def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, output_dir):
     ##########################################
-    # Check command line flags
+    # Check command line fslags
     ##########################################
     if not (before ^ after):
         raise click.UsageError("You must supply either --before or --after")

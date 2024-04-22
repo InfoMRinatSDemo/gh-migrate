@@ -4,6 +4,7 @@ from jinja2 import Environment, FileSystemLoader
 import pandas as pd
 
 from ..workbook import get_included_orgs
+from migrate.version import checkpoint_file
 
 
 @click.group()
@@ -33,10 +34,12 @@ def render_template(template_name, **kwargs):
 # Dry-run script
 ###############################
 @scripts.command()
-@click.argument(
+@click.option(
     "-w",
+    "--workbook",
+    "workbook_path",
     required=False,
-    default="report/InfoMagnus - Migration Workbook.xlsx",
+    default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 def dry_run(workbook_path):
     """

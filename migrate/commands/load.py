@@ -2,6 +2,8 @@ import os
 import click
 import pandas as pd
 
+from migrate.version import checkpoint_file
+
 from ..workbook import *
 
 
@@ -18,7 +20,7 @@ def load():
     "--workbook",
     "workbook_path",
     required=False,
-    default="report/InfoMagnus - Migration Workbook.xlsx",
+    default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 def inventory(before_source, before_target, workbook_path):
     "" ""
