@@ -37,12 +37,6 @@ def get_included_orgs(org_type, workbook_path):
     data = list(ws.values)
     df = pd.DataFrame(data[1:], columns=data[0])
 
-    # If column 2 isn't named 'exclude' return
-    if df.columns[3] != "exclude":
-        raise ValueError(
-            "'Mapping - Org' column 2 must be named 'exclude'.  Stop messing with things!"
-        )
-
     # Filter out excluded orgs
     orgs = df[df["exclude"] == False][org_type].tolist()
 
