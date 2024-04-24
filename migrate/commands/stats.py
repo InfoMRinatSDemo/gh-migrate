@@ -27,7 +27,7 @@ from migrate.workbook import get_included_orgs_by_wave
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.argument("output_dir", required=False, default="logs")
-@snapshot_before_after()
+# @snapshot_before_after()
 def stats(
     orgs, pat, before, after, source, target, dry_run, wave, workbook_path, output_dir
 ):

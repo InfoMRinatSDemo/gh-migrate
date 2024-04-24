@@ -22,7 +22,7 @@ def load():
     required=False,
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
-@snapshot_before_after()
+# @snapshot_before_after()
 def inventory(before_source, before_target, workbook_path):
     "" ""
 
