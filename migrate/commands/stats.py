@@ -66,6 +66,8 @@ def stats(
             else:
                 orgs = get_included_orgs("target_name", workbook_path)
 
+    breakpoint()
+
     ##########################################
     # Housekeeping
     ##########################################
