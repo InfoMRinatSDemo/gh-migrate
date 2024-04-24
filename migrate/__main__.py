@@ -5,6 +5,7 @@ from .commands.stats import stats
 from .commands.load import load
 from .commands.scripts import scripts
 from .commands.get import get
+from .commands.snapshots import snapshots
 
 
 @click.group()
@@ -18,6 +19,7 @@ cli.add_command(stats)
 cli.add_command(load)
 cli.add_command(scripts)
 cli.add_command(get)
+cli.add_command(snapshots)
 
 if __name__ == "__main__":
     cli()

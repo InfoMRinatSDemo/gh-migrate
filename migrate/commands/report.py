@@ -32,17 +32,20 @@ def report(dry_run, wave, workbook_path, output_dir):
     ############################################################
     # Parse the GEI logs and generate the GEI migration reports
     ############################################################
+    print(f"\n* Generating GEI migration reports for wave: {wave}")
     (org_timings, repo_timings, repo_results) = generate_gei_reports(orgs, output_dir)
     add_worksheet(workbook, f"Org Timings-{wave}", org_timings)
     add_worksheet(workbook, f"Repo Timings-{wave}", repo_timings)
     add_worksheet(workbook, f"Repo Results-{wave}", repo_results)
+    workbook.save(workbook_path)
 
     ############################################################
     # Parse the `gh migrate stats` results and report any
     # differences between the source and target orgs
     ############################################################
-    stats = generate_stats_report(workbook, output_dir)
-    add_worksheet(workbook, "Migration Report-{wave}", stats)
+    print(f"\n* Generating stats report for wave: {wave}")
+    stats = generate_stats_report(workbook, wave, output_dir)
+    add_worksheet(workbook, f"Migration Report-{wave}", stats)
 
     workbook.save(workbook_path)
 
@@ -54,7 +57,7 @@ def generate_gei_reports(orgs, logs_dir):
     repo_results = []
 
     for org in orgs:
-        print(f"\n* Processing org {org}")
+        print(f"\n** Processing org {org}")
         (start_time, end_time, duration, repo_timing, repo_result) = (
             parse_migration_logs(org, logs_dir)
         )
@@ -119,8 +122,8 @@ def parse_org_log(output_dir):
 
     # start_time contains a string like "2024-04-12T01:25:50Z"
 
-    start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-    end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
+    start_time = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+    end_time = datetime.datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
 
     return (start_time, end_time, int((end_time - start_time).total_seconds() / 60))
 
@@ -168,8 +171,8 @@ def parse_repo_logs(org, type, output_dir):
 
         # start_time contains a string like "2024-04-12T01:25:50Z"
 
-        start_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-        end_time = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
+        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
 
         print(f"Repo: {repo_log}")
 
@@ -221,11 +224,11 @@ def parse_repo_logs(org, type, output_dir):
     return (timing_df, results_df)
 
 
-def generate_stats_report(workbook, output):
+def generate_stats_report(workbook, wave, output):
 
-    before_source = os.path.join(output, "before-source.csv")
-    after_target = os.path.join(output, "after-target.csv")
-    after_source = os.path.join(output, "after-source.csv")
+    before_source = os.path.join(output, f"before-source-wave-{wave}.csv")
+    after_target = os.path.join(output, f"after-target-wave-{wave}.csv")
+    after_source = os.path.join(output, f"after-source-wave-{wave}.csv")
 
     before_source_stats = pd.read_csv(before_source, dtype=str)
     after_target_stats = pd.read_csv(after_target, dtype=str)

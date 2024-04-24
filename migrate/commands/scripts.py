@@ -1,3 +1,4 @@
+import glob
 import os
 import click
 from jinja2 import Environment, FileSystemLoader
@@ -90,104 +91,208 @@ def migration(workbook_path, dry_run, wave):
     # checkpoint_file("./scripts/migration.sh", f"SCRIPTS: Saving new migration.sh")
 
 
-###############################
-# Create teams
-###############################
+##############################################################################
+# Post-migration scripts
+##############################################################################
 @scripts.command()
-def create_teams(teams):
-    """
-    Generate the "create teams" script.
-    """
-    render_template("step5-create-teams.sh.j2", teams=teams)
+@click.option(
+    "-w",
+    "--workbook",
+    "workbook_path",
+    required=False,
+    default="./report/InfoMagnus - Migration Workbook.xlsx",
+)
+@click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
+@click.option("--wave", type=int, help="Wave number", required=True)
+def post_migration(workbook_path, dry_run, wave):
+    print("*** Generating post-migration scripts")
+
+    ###############################
+    # Update team permissions
+    ###############################
+    def update_team_perms(org):
+        """
+        Generate the "update team permissions" script.
+        """
+        # Read in each of the source org's team-repos csv files
+        team_repos_dir = os.path.join(
+            "snapshots", "before", "source", org, "team-repos.csv"
+        )
+
+        # Combine contents of all csv files into a single dataframe
+        team_repos_df = pd.read_csv(team_repos_dir)
+
+        render_template(
+            "update-team-perms.sh.j2",
+            f"wave-{wave}-update-team-perms-{org}.sh",
+            repos=team_repos_df.to_dict(orient="records"),
+            target_org=org,
+        )
+
+    ###############################
+    # Add users to teams
+    ###############################
+    def add_users_to_teams(org):
+        """
+        Generate the "add users to teams" script.
+        """
+        # Read in each of the source org's team-users csv files
+        team_users_file = os.path.join(
+            "snapshots", "before", "source", org, "team-users.csv"
+        )
+
+        team_users_df = pd.read_csv(team_users_file)
+
+        # The mannequins file contains the mapping of mannequin-user to target-user
+        mannequins_df = get_mannequin_df(workbook_path)
+
+        # Map the user from the source org to target org using mannequins.csv
+        mapped_users = team_users_df.merge(
+            # We use a left join so we can identify unmapped users
+            # (they will be NaN in the "target-user" column)
+            mannequins_df,
+            how="left",
+            left_on="login",
+            right_on="mannequin-user",
+        )
+
+        # Identify unmapped users
+        unmapped_users = mapped_users[mapped_users["target-user"].isna()]
+        if not unmapped_users.empty:
+            print(f"*** Couldn't map these users for {org}:")
+            print(
+                unmapped_users[["team_slug", "login", "mannequin-user", "target-user"]]
+            )
+
+        mapped_users = mapped_users[mapped_users["target-user"].notna()]
+        render_template(
+            "add-users-to-teams.sh.j2",
+            f"wave-{wave}-add-users-to-teams-{org}.sh",
+            users=mapped_users.to_dict(orient="records"),
+            target_org=org,
+        )
+
+    if dry_run:
+        print(f"\n* Generating dry-run post-migration script for wave: {wave}")
+        orgs = get_included_orgs_by_wave_df("dry_run_target_name", wave, workbook_path)
+    else:
+        print(f"\n* Generating production post-migration script for wave: {wave}")
+        orgs = get_included_orgs_by_wave_df("target_name", wave, workbook_path)
+
+    # Get the number of unique waves
+    waves = orgs["wave"].unique()
+
+    # Create a migration script for each wave
+    for wave in waves:
+        # Get the orgs for this wave
+        wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
+
+        for org in wave_orgs:
+            update_team_perms(org["source_name"])
+            add_users_to_teams(org["source_name"])
+
+    # repos = get_repos_by_exclude("exclude")
+    # teams = get_teams_by_exclude("exclude")
 
 
-###############################
-# Update team permissions
-###############################
-@scripts.command()
-def update_team_perms():
-    """
-    Generate the "update team permissions" script.
-    """
-    # Read in each of the source org's team-repos csv files
-    team_repos_dir = os.path.join(
-        SNAPSHOTS_DIR, "initial", "source", SOURCE_ORG, "team-repos"
-    )
-
-    # Combine contents of all csv files into a single dataframe
-    team_repos_df = pd.concat(
-        [pd.read_csv(f) for f in glob.glob(os.path.join(team_repos_dir, "*.csv"))],
-        ignore_index=True,
-    )
-
-    render_template(
-        "step5-update-team-perms.sh.j2",
-        repos=team_repos_df.to_dict(orient="records"),
-    )
+# ###############################
+# # Create teams
+# ###############################
+# @scripts.command()
+# def create_teams(teams):
+#     """
+#     Generate the "create teams" script.
+#     """
+#     render_template("step5-create-teams.sh.j2", teams=teams)
 
 
-###############################
-# Add users to teams
-###############################
-@scripts.command()
-def add_users_to_teams():
-    """
-    Generate the "add users to teams" script.
-    """
-    # Read in each of the source org's team-users csv files
-    team_users_dir = os.path.join(
-        SNAPSHOTS_DIR, "initial", "source", SOURCE_ORG, "team-users"
-    )
+# ###############################
+# # Update team permissions
+# ###############################
+# @scripts.command()
+# def update_team_perms():
+#     """
+#     Generate the "update team permissions" script.
+#     """
+#     # Read in each of the source org's team-repos csv files
+#     team_repos_dir = os.path.join(
+#         SNAPSHOTS_DIR, "initial", "source", SOURCE_ORG, "team-repos"
+#     )
 
-    # Combine contents of all csv files into a single dataframe
-    team_users_df = pd.concat(
-        [pd.read_csv(f) for f in glob.glob(os.path.join(team_users_dir, "*.csv"))],
-        ignore_index=True,
-    )
+#     # Combine contents of all csv files into a single dataframe
+#     team_repos_df = pd.concat(
+#         [pd.read_csv(f) for f in glob.glob(os.path.join(team_repos_dir, "*.csv"))],
+#         ignore_index=True,
+#     )
 
-    # The mannequins file contains the mapping of mannequin-user to target-user
-    mannequins_df = pd.read_csv(os.path.join(MAPPINGS_DIR, "mannequins.csv"))
-
-    # Map the user from the source org to target org using mannequins.csv
-    mapped_users = team_users_df.merge(
-        # We use a left join so we can identify unmapped users
-        # (they will be NaN in the "target-user" column)
-        mannequins_df,
-        how="left",
-        left_on="login",
-        right_on="mannequin-user",
-    )
-
-    # Identify unmapped users
-    unmapped_users = mapped_users[mapped_users["target-user"].isna()]
-    if not unmapped_users.empty:
-        print(f"*** Couldn't map these users:")
-        print(unmapped_users[["team_slug", "login", "mannequin-user", "target-user"]])
-
-    mapped_users = mapped_users[mapped_users["target-user"].notna()]
-    render_template(
-        "step5-add-users-to-teams.sh.j2",
-        users=mapped_users.to_dict(orient="records"),
-    )
+#     render_template(
+#         "step5-update-team-perms.sh.j2",
+#         repos=team_repos_df.to_dict(orient="records"),
+#     )
 
 
-###############################
-# Get migration logs
-###############################
-@scripts.command()
-def get_migration_logs(repos):
-    """
-    Generate the "get migration logs" script.
-    """
-    render_template("step5-get-migration-logs.sh.j2", repos=repos)
+# ###############################
+# # Add users to teams
+# ###############################
+# @scripts.command()
+# def add_users_to_teams():
+#     """
+#     Generate the "add users to teams" script.
+#     """
+#     # Read in each of the source org's team-users csv files
+#     team_users_dir = os.path.join(
+#         SNAPSHOTS_DIR, "initial", "source", SOURCE_ORG, "team-users"
+#     )
+
+#     # Combine contents of all csv files into a single dataframe
+#     team_users_df = pd.concat(
+#         [pd.read_csv(f) for f in glob.glob(os.path.join(team_users_dir, "*.csv"))],
+#         ignore_index=True,
+#     )
+
+#     # The mannequins file contains the mapping of mannequin-user to target-user
+#     mannequins_df = pd.read_csv(os.path.join(MAPPINGS_DIR, "mannequins.csv"))
+
+#     # Map the user from the source org to target org using mannequins.csv
+#     mapped_users = team_users_df.merge(
+#         # We use a left join so we can identify unmapped users
+#         # (they will be NaN in the "target-user" column)
+#         mannequins_df,
+#         how="left",
+#         left_on="login",
+#         right_on="mannequin-user",
+#     )
+
+#     # Identify unmapped users
+#     unmapped_users = mapped_users[mapped_users["target-user"].isna()]
+#     if not unmapped_users.empty:
+#         print(f"*** Couldn't map these users:")
+#         print(unmapped_users[["team_slug", "login", "mannequin-user", "target-user"]])
+
+#     mapped_users = mapped_users[mapped_users["target-user"].notna()]
+#     render_template(
+#         "step5-add-users-to-teams.sh.j2",
+#         users=mapped_users.to_dict(orient="records"),
+#     )
 
 
-###############################
-# Rollback migration
-###############################
-@scripts.command()
-def rollback_migration(repos):
-    """
-    Generate the "rollback migration" script.
-    """
-    render_template("step5-rollback-migration.sh.j2", repos=repos)
+# ###############################
+# # Get migration logs
+# ###############################
+# @scripts.command()
+# def get_migration_logs(repos):
+#     """
+#     Generate the "get migration logs" script.
+#     """
+#     render_template("step5-get-migration-logs.sh.j2", repos=repos)
+
+
+# ###############################
+# # Rollback migration
+# ###############################
+# @scripts.command()
+# def rollback_migration(repos):
+#     """
+#     Generate the "rollback migration" script.
+#     """
+#     render_template("step5-rollback-migration.sh.j2", repos=repos)

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+{% for repo in repos -%}
+{% if repo.role_name == 'read' -%}
+    {% set p = 'pull' %}
+{% elif repo.role_name == 'write' -%}
+    {% set p = 'push' %}
+{% elif repo.role_name == 'admin' -%}
+    {% set p = 'admin' %}
+{% elif repo.role_name == 'maintain' -%}
+    {% set p = 'maintain' %}
+{% elif repo.role_name == 'triage' -%}
+    {% set p = 'triage' %}
+{% endif -%}
+gh api -X PUT /orgs/{{ target_org }}/teams/{{ repo.team_slug }}/repos/{{ target_org }}/{{ repo.name }} -f permission="{{ p }}"
+{%- endfor %}

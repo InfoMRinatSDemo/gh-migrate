@@ -145,6 +145,11 @@ source .env.pats
 gh migrate stats --before --source --dry-run --wave 1 --pat ${source_pat}
 
 ##########################################
+# Capture pre-migration source snapshots
+##########################################
+gh migrate snapshots --before --source --dry-run --wave 1 --pat ${source_pat}
+
+##########################################
 # Migrate!
 ##########################################
 gh gei migrate-org \

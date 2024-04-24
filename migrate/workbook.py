@@ -28,6 +28,27 @@ def get_workbook(workbook_path):
     return workbook
 
 
+def get_mannequin_df(workbook_path):
+    # Load the Org Mappings
+    wb = load_workbook(workbook_path, data_only=True)
+
+    ws = wb["Mapping - User"]
+
+    data = list(ws.values)
+
+    # Set the first row as the header
+    df = pd.DataFrame(data[1:], columns=data[0])
+
+    # Get orgs for wave, filter out excluded orgs
+    users = df[(df["exclude"] == False)]
+
+    # If orgs is empty
+    if users.empty:
+        raise ValueError("No users found in 'Mapping - User'")
+
+    return users
+
+
 def get_included_orgs(org_type, workbook_path):
     # Load the Org Mappings
     wb = load_workbook(workbook_path, data_only=True)
