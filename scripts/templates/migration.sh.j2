@@ -56,6 +56,20 @@ gh migrate get logs --wave {{ wave }}
 {% endif %}
 
 ##########################################
+# Cleanup
+##########################################
+export GITHUB_TOKEN=${target_pat}
+
+{%- for org in orgs %}
+gh repo delete \
+    {%- if dry_run %}
+    {{ org["dry_run_target_name"] }}/gei-migration-results
+    {%- else %}
+    {{ org["target_name"] }}/gei-migration-results
+    {%- endif %}
+{% endfor %}
+
+##########################################
 # Generate post-migration report
 ##########################################
 {%- if dry_run %}

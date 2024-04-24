@@ -70,7 +70,7 @@ def migration(workbook_path, dry_run, wave):
             # checkpoint_file("./scripts/dry-run.sh", f"SCRIPTS: Saving old dry-run.sh")
             render_template(
                 "migration.sh.j2",
-                f"migration-dry-run-{wave}.sh",
+                f"wave-{wave}-migration-dry-run.sh",
                 target_slug="target_slug",
                 orgs=wave_orgs,
                 dry_run=True,
@@ -81,7 +81,7 @@ def migration(workbook_path, dry_run, wave):
             # checkpoint_file("./scripts/migration.sh", f"SCRIPTS: Saving old migration.sh")
             render_template(
                 "migration.sh.j2",
-                f"migration-production-{wave}.sh",
+                f"wave-{wave}-migration-production.sh",
                 target_slug="target_slug",
                 orgs=wave_orgs,
                 dry_run=False,

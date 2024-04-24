@@ -169,6 +169,11 @@ gh gei migrate-org \
     --verbose
 
 ##########################################
+# Generate post-migration scripts
+##########################################
+gh migrate scripts post-migration --wave 1
+
+##########################################
 # Capture post-migration source stats
 ##########################################
 gh migrate stats --after --source --dry-run --wave 1 --pat ${source_pat}
@@ -182,6 +187,7 @@ gh migrate stats --after --target --dry-run --wave 1 --pat ${target_pat}
 # Get migration logs
 ##########################################
 gh migrate get logs --dry-run --wave 1
+
 
 ##########################################
 # Generate post-migration report
