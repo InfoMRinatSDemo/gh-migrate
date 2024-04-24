@@ -46,7 +46,7 @@ def render_template(template_name, output_name, **kwargs):
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
-@click.option("--wave", help="Wave number", required=True)
+@click.option("--wave", type=int, help="Wave number", required=True)
 def migration(workbook_path, dry_run, wave):
     """
     Generate the migration script.
@@ -106,20 +106,20 @@ def migration(workbook_path, dry_run, wave):
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
-@click.option("--wave", help="Wave number", required=True)
+@click.option("--wave", type=int, help="Wave number", required=True)
 def post_migration(workbook_path, dry_run, wave):
     print("*** Generating post-migration scripts")
 
     ###############################
     # Update team permissions
     ###############################
-    def update_team_perms(org):
+    def update_team_perms(source_org, target_org):
         """
         Generate the "update team permissions" script.
         """
         # Read in each of the source org's team-repos csv files
         team_repos_dir = os.path.join(
-            "snapshots", "before", "source", org, "team-repos.csv"
+            "snapshots", "before", "source", source_org, "team-repos.csv"
         )
 
         # Combine contents of all csv files into a single dataframe
@@ -127,21 +127,21 @@ def post_migration(workbook_path, dry_run, wave):
 
         render_template(
             "update-team-perms.sh.j2",
-            f"wave-{wave}-update-team-perms-{org}.sh",
+            f"wave-{int(wave)}-update-team-perms-{target_org}.sh",
             repos=team_repos_df.to_dict(orient="records"),
-            target_org=org,
+            target_org=target_org,
         )
 
     ###############################
     # Add users to teams
     ###############################
-    def add_users_to_teams(org):
+    def add_users_to_teams(source_org, target_org):
         """
         Generate the "add users to teams" script.
         """
         # Read in each of the source org's team-users csv files
         team_users_file = os.path.join(
-            "snapshots", "before", "source", org, "team-users.csv"
+            "snapshots", "before", "source", source_org, "team-users.csv"
         )
 
         team_users_df = pd.read_csv(team_users_file)
@@ -162,7 +162,7 @@ def post_migration(workbook_path, dry_run, wave):
         # Identify unmapped users
         unmapped_users = mapped_users[mapped_users["target-user"].isna()]
         if not unmapped_users.empty:
-            print(f"*** Couldn't map these users for {org}:")
+            print(f"*** Couldn't map these users for {target_org}:")
             print(
                 unmapped_users[["team_slug", "login", "mannequin-user", "target-user"]]
             )
@@ -170,9 +170,9 @@ def post_migration(workbook_path, dry_run, wave):
         mapped_users = mapped_users[mapped_users["target-user"].notna()]
         render_template(
             "add-users-to-teams.sh.j2",
-            f"wave-{wave}-add-users-to-teams-{org}.sh",
+            f"wave-{wave}-add-users-to-teams-{target_org}.sh",
             users=mapped_users.to_dict(orient="records"),
-            target_org=org,
+            target_org=target_org,
         )
 
     if dry_run:
@@ -191,8 +191,8 @@ def post_migration(workbook_path, dry_run, wave):
         wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
 
         for org in wave_orgs:
-            update_team_perms(org["target_name"])
-            add_users_to_teams(org["target_name"])
+            update_team_perms(org["source_name"], org["target_name"])
+            add_users_to_teams(org["source_name"], org["target_name"])
 
     # repos = get_repos_by_exclude("exclude")
     # teams = get_teams_by_exclude("exclude")
