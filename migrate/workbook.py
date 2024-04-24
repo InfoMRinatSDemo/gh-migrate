@@ -69,6 +69,27 @@ def get_included_orgs_by_wave(org_type, wave, workbook_path):
     return orgs
 
 
+def get_included_orgs_by_wave_df(org_type, wave, workbook_path):
+    # Load the Org Mappings
+    wb = load_workbook(workbook_path, data_only=True)
+
+    ws = wb["Mapping - Org"]
+
+    data = list(ws.values)
+
+    # Set the first row as the header
+    df = pd.DataFrame(data[1:], columns=data[0])
+
+    # Get orgs for wave, filter out excluded orgs
+    orgs = df[(df["exclude"] == False) & (df["wave"] == wave)]
+
+    # If orgs is empty
+    if orgs.empty:
+        raise ValueError("No source orgs found in 'Mapping - Org'")
+
+    return orgs
+
+
 def add_sheet(workbook, sheet_name, desired_index=0, tab_color="FF0000"):
     if sheet_name in workbook.sheetnames:
         worksheet = workbook[sheet_name]

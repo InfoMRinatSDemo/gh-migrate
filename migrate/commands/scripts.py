@@ -42,7 +42,8 @@ def render_template(template_name, output_name, **kwargs):
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
-def migration(workbook_path, dry_run):
+@click.option("--wave", type=int, help="Wave number", required=True)
+def migration(workbook_path, dry_run, wave):
     """
     Generate the migration script.
     """
@@ -50,9 +51,11 @@ def migration(workbook_path, dry_run):
     # checkpoint_file(workbook_path, f"SCRIPTS: Saving old {workbook_path}")
 
     if dry_run:
-        orgs = get_included_orgs_by_wave("dry_run_target_name", workbook_path)
+        print(f"\n* Generating dry-run migration script for wave: {wave}")
+        orgs = get_included_orgs_by_wave_df("dry_run_target_name", wave, workbook_path)
     else:
-        orgs = get_included_orgs_by_wave("target_name", workbook_path)
+        print(f"\n* Generating production migration script for wave: {wave}")
+        orgs = get_included_orgs_by_wave_df("target_name", wave, workbook_path)
 
     # Get the number of unique waves
     waves = orgs["wave"].unique()

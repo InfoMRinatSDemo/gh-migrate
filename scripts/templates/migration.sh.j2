@@ -16,15 +16,15 @@ gh migrate stats --before --source --wave {{ wave }}
 ##########################################
 {%- for org in orgs %}
 gh gei migrate-org \
-    --github-target-enterprise {{ target_slug }} \
+    --github-target-enterprise ${target_slug} \
     --github-source-org {{ org["source_name"] }} \
     {%- if dry_run %}
     --github-target-org {{ org["dry_run_target_name"] }} \
     {%- else %}
     --github-target-org {{ org["target_name"] }} \
     {%- endif %}
-    --github-source-pat {{ source_pat }} \
-    --github-target-pat {{ target_pat }} \
+    --github-source-pat ${source_pat} \
+    --github-target-pat ${target_pat} \
     --verbose
 {% endfor %}
 

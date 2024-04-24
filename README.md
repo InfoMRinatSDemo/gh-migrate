@@ -129,7 +129,7 @@ This sheet is used to document the desired names for the target-state organizati
 Once you've identified which organizations will be part of the dry-run, you can generate the dry-run migration scripts:
 
 ```bash
-gh migrate scripts migration --dry-run
+gh migrate scripts migration --dry-run --wave 1
 ```
 
 The dry-run script(s) are placed in `scripts/`, and look like:
