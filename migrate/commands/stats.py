@@ -7,7 +7,7 @@ from functools import lru_cache
 from githubkit import GitHub
 from ..version import *
 
-from ..workbook import get_included_orgs
+from ..workbook import get_included_orgs, get_included_orgs_by_wave
 
 
 @click.command()
@@ -59,12 +59,14 @@ def stats(
     ##########################################
     if orgs == ():
         if source:
-            orgs = get_included_orgs("source_name", workbook_path)
+            orgs = get_included_orgs_by_wave("source_name", wave, workbook_path)
         elif target:
             if dry_run:
-                orgs = get_included_orgs("dry_run_target_name", workbook_path)
+                orgs = get_included_orgs_by_wave(
+                    "dry_run_target_name", wave, workbook_path
+                )
             else:
-                orgs = get_included_orgs("target_name", workbook_path)
+                orgs = get_included_orgs_by_wave("target_name", wave, workbook_path)
 
     breakpoint()
 

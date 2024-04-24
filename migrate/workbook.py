@@ -48,7 +48,7 @@ def get_included_orgs(org_type, workbook_path):
     return orgs
 
 
-def get_included_orgs_by_wave(org_type, workbook_path):
+def get_included_orgs_by_wave(org_type, wave, workbook_path):
     # Load the Org Mappings
     wb = load_workbook(workbook_path, data_only=True)
 
@@ -59,10 +59,8 @@ def get_included_orgs_by_wave(org_type, workbook_path):
     # Set the first row as the header
     df = pd.DataFrame(data[1:], columns=data[0])
 
-    # The dataframe contains a column called "wave" that contains the wave number
-    # and "order" that contains the order of the org in the wave
-    # Create a list of tuples containing the org and the wave number
-    orgs = df[df["exclude"] == False]
+    # Get orgs for wave, filter out excluded orgs
+    orgs = df[df["exclude"] == False and df["wave" == wave]][org_type].tolist()
 
     # If orgs is empty
     if orgs.empty:
