@@ -46,7 +46,7 @@ def render_template(template_name, output_name, **kwargs):
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
-@click.option("--wave", type=int, help="Wave number", required=True)
+@click.option("--wave", help="Wave number", required=True)
 def migration(workbook_path, dry_run, wave):
     """
     Generate the migration script.
@@ -106,7 +106,7 @@ def migration(workbook_path, dry_run, wave):
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
-@click.option("--wave", type=int, help="Wave number", required=True)
+@click.option("--wave", help="Wave number", required=True)
 def post_migration(workbook_path, dry_run, wave):
     print("*** Generating post-migration scripts")
 
@@ -191,8 +191,8 @@ def post_migration(workbook_path, dry_run, wave):
         wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
 
         for org in wave_orgs:
-            update_team_perms(org["source_name"])
-            add_users_to_teams(org["source_name"])
+            update_team_perms(org["target_name"])
+            add_users_to_teams(org["target_name"])
 
     # repos = get_repos_by_exclude("exclude")
     # teams = get_teams_by_exclude("exclude")
