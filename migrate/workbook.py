@@ -63,7 +63,7 @@ def get_included_orgs_by_wave(org_type, wave, workbook_path):
     orgs = df[(df["exclude"] == False) & (df["wave"] == wave)][org_type].tolist()
 
     # If orgs is empty
-    if orgs.empty:
+    if orgs == ():
         raise ValueError("No source orgs found in 'Mapping - Org'")
 
     return orgs
