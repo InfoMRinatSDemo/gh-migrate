@@ -1,0 +1,65 @@
+#!/bin/bash
+
+source .env.pats
+
+##########################################
+# Capture pre-migration source stats
+##########################################
+{% if dry_run %}
+gh migrate stats --before --source --dry-run
+{% else %}
+gh migrate stats --before --source
+{% endif %}
+
+##########################################
+# Migrate!
+##########################################
+{%- for org in orgs %}
+gh gei migrate-org \
+    --github-target-enterprise {{ target_slug }} \
+    --github-source-org {{ org["source_name"] }} \
+    {%- if dry_run %}
+    --github-target-org {{ org["dry_run_target_name"] }} \
+    {%- else %}
+    --github-target-org {{ org["target_name"] }} \
+    {%- endif %}
+    --github-source-pat {{ source_pat }} \
+    --github-target-pat {{ target_pat }} \
+    --verbose
+{% endfor %}
+
+##########################################
+# Capture post-migration source stats
+##########################################
+{%- if dry_run %}
+gh migrate stats --after --source --dry-run
+{%- else %}
+gh migrate stats --after --source
+{% endif %}
+
+##########################################
+# Capture post-migration target stats
+##########################################
+{%- if dry_run %}
+gh migrate stats --after --target --dry-run
+{%- else %}
+gh migrate stats --after --target
+{% endif %}
+
+##########################################
+# Get migration logs
+##########################################
+{%- if dry_run %}
+gh migrate get logs --dry-run
+{%- else %}
+gh migrate get logs
+{% endif %}
+
+##########################################
+# Generate post-migration report
+##########################################
+{%- if dry_run %}
+gh migrate report --dry-run
+{%- else %}
+gh migrate report
+{% endif %}

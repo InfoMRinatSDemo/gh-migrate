@@ -3,7 +3,7 @@ import click
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
 
-from ..workbook import get_included_orgs
+from ..workbook import *
 from migrate.version import checkpoint_file
 
 
@@ -12,7 +12,7 @@ def scripts():
     pass
 
 
-def render_template(template_name, **kwargs):
+def render_template(template_name, output_name, **kwargs):
     """
     Render a jinja2 template and write it to a file.
     """
@@ -20,18 +20,18 @@ def render_template(template_name, **kwargs):
     template = env.get_template(os.path.join("scripts", "templates", template_name))
 
     # Render the template with the data
-    output = template.render(source_pat="secret!", target_pat="omg!", **kwargs)
+    output = template.render(source_pat="source_pat", target_pat="target_pat", **kwargs)
 
     # Remove .j2 from the template name
-    script_name = template_name.replace(".j2", "")
+    # script_name = template_name.replace(".j2", "")
 
     # Write the rendered migration script to the file
-    with open(os.path.join("scripts", script_name), "w") as f:
+    with open(os.path.join("scripts", output_name), "w") as f:
         f.write(output)
 
 
 ###############################
-# Dry-run script
+# Migration script
 ###############################
 @scripts.command()
 @click.option(
@@ -41,29 +41,48 @@ def render_template(template_name, **kwargs):
     required=False,
     default="./report/InfoMagnus - Migration Workbook.xlsx",
 )
-def dry_run(workbook_path):
+@click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
+def migration(workbook_path, dry_run):
     """
-    Generate the dry-run script.
+    Generate the migration script.
     """
 
-    checkpoint_file(workbook_path, f"SCRIPTS: Saving old {workbook_path}")
-    checkpoint_file("./scripts/dry-run.sh", f"SCRIPTS: Saving old dry-run.sh")
+    # checkpoint_file(workbook_path, f"SCRIPTS: Saving old {workbook_path}")
 
-    orgs = get_included_orgs("source_name", workbook_path)
-    render_template("dry-run.sh.j2", orgs=orgs)
+    if dry_run:
+        orgs = get_included_orgs_by_wave("dry_run_target_name", workbook_path)
+    else:
+        orgs = get_included_orgs_by_wave("target_name", workbook_path)
 
-    checkpoint_file("./scripts/dry-run.sh", f"SCRIPTS: Saving new dry-run.sh")
+    # Get the number of unique waves
+    waves = orgs["wave"].unique()
 
+    # Create a migration script for each wave
+    for wave in waves:
+        # Get the orgs for this wave
+        wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
 
-###############################
-# Migration script
-###############################
-@scripts.command()
-def migration(repos):
-    """
-    Generate the "create migration" script.
-    """
-    render_template("step4-migration-script.ps1.j2", repos=repos)
+        if dry_run:
+            # checkpoint_file("./scripts/dry-run.sh", f"SCRIPTS: Saving old dry-run.sh")
+            render_template(
+                "migration.sh.j2",
+                f"migration-dry-run-{wave}.sh",
+                target_slug="target_slug",
+                orgs=wave_orgs,
+                dry_run=True,
+            )
+
+        else:
+            # checkpoint_file("./scripts/migration.sh", f"SCRIPTS: Saving old migration.sh")
+            render_template(
+                "migration.sh.j2",
+                f"migration-production-{wave}.sh",
+                target_slug="target_slug",
+                orgs=wave_orgs,
+                dry_run=False,
+            )
+
+    # checkpoint_file("./scripts/migration.sh", f"SCRIPTS: Saving new migration.sh")
 
 
 ###############################

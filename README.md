@@ -129,10 +129,10 @@ This sheet is used to document the desired names for the target-state organizati
 Once you've identified which organizations will be part of the dry-run, you can generate the dry-run migration scripts:
 
 ```bash
-gh migrate scripts dry-run
+gh migrate scripts migration --dry-run
 ```
 
-The dry-run script is placed in `scripts/dry-run.sh`, and looks like:
+The dry-run script(s) are placed in `scripts/`, and look like:
 
 ```bash
 #!/bin/bash
@@ -151,16 +151,16 @@ gh gei migrate-org \
     --github-target-enterprise  \
     --github-source-org source-org1 \
     --github-target-org target-org1-DRYRUN \
-    --github-source-pat secret \
-    --github-target-pat secret \
+    --github-source-pat ${source_pat} \
+    --github-target-pat ${target_pat} \
     --verbose
 
 gh gei migrate-org \
     --github-target-enterprise  \
     --github-source-org source-org2 \
     --github-target-org target-org2-DRYRUN \
-    --github-source-pat secret \
-    --github-target-pat secret \
+    --github-source-pat ${source_pat} \
+    --github-target-pat ${target_pat} \
     --verbose
 
 ##########################################
@@ -182,6 +182,12 @@ gh migrate get logs --dry-run
 # Generate post-migration report
 ##########################################
 gh migrate report --dry-run
+```
+
+Before running the script, you must create an `.envs.pats` file containing the following:
+```bash
+export source_pat=<source pat>
+export target_pat=<target pat>
 ```
 
 After the dry-run completes, the following files will be created:
