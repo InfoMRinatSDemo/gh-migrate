@@ -125,9 +125,17 @@ def post_migration(workbook_path, dry_run, wave):
         # Combine contents of all csv files into a single dataframe
         team_repos_df = pd.read_csv(team_repos_dir)
 
+        if dry_run:
+            output_file = f"DRY-RUN-wave-{int(wave)}-update-team-perms-{target_org}.sh"
+
+        else:
+            output_file = (
+                f"PRODUCTION-wave-{int(wave)}-update-team-perms-{target_org}.sh"
+            )
+
         render_template(
             "update-team-perms.sh.j2",
-            f"wave-{int(wave)}-update-team-perms-{target_org}.sh",
+            output_file,
             repos=team_repos_df.to_dict(orient="records"),
             target_org=target_org,
         )
@@ -167,10 +175,17 @@ def post_migration(workbook_path, dry_run, wave):
                 unmapped_users[["team_slug", "login", "mannequin-user", "target-user"]]
             )
 
+        if dry_run:
+            output_file = f"DRY-RUN-wave-{int(wave)}-add-users-to-teams-{target_org}.sh"
+        else:
+            output_file = (
+                f"PRODUCTION-wave-{int(wave)}-add-users-to-teams-{target_org}.sh"
+            )
+
         mapped_users = mapped_users[mapped_users["target-user"].notna()]
         render_template(
             "add-users-to-teams.sh.j2",
-            f"wave-{wave}-add-users-to-teams-{target_org}.sh",
+            output_file,
             users=mapped_users.to_dict(orient="records"),
             target_org=target_org,
         )
