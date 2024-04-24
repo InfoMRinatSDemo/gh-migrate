@@ -8,7 +8,7 @@ from githubkit import GitHub
 import subprocess
 from datetime import datetime
 
-from migrate.workbook import get_included_orgs
+from migrate.workbook import get_included_orgs_by_wave
 
 ###############################################################################
 # We can grab the migration logs in the following ways:
@@ -34,6 +34,7 @@ def get():
 @get.command()
 @click.option("--org", "orgs", multiple=True, required=False)
 @click.option("--pat", "pat", required=False)
+@click.option("--wave", type=int, help="Wave number", required=True)
 @click.option(
     "-w",
     "--workbook",
@@ -43,7 +44,7 @@ def get():
 )
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
 @click.option("-o", "--output", "output", required=True, default="logs")
-def logs(orgs, pat, workbook_path, dry_run, output):
+def logs(orgs, pat, wave, workbook_path, dry_run, output):
     print(f"* Checking {orgs}")
 
     if dry_run:
@@ -57,7 +58,7 @@ def logs(orgs, pat, workbook_path, dry_run, output):
     # Get included source orgs from workbook
     ##########################################
     if orgs == ():
-        orgs = get_included_orgs("dry_run_target_name", workbook_path)
+        orgs = get_included_orgs_by_wave("dry_run_target_name", wave, workbook_path)
 
     if orgs is not None:
         for org in orgs:

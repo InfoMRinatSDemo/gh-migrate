@@ -7,7 +7,7 @@ from functools import lru_cache
 from githubkit import GitHub
 from ..version import *
 
-from ..workbook import get_included_orgs, get_included_orgs_by_wave
+from migrate.workbook import get_included_orgs_by_wave
 
 
 @click.command()

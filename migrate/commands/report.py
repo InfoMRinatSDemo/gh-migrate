@@ -3,11 +3,12 @@ import click
 import pandas as pd
 from datetime import datetime
 
-from ..workbook import *
+from migrate.workbook import *
 
 
 @click.command()
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
+@click.option("--wave", type=int, help="Wave number", required=True)
 @click.option(
     "-w",
     "--workbook",
@@ -16,7 +17,7 @@ from ..workbook import *
     default="report/InfoMagnus - Migration Workbook.xlsx",
 )
 @click.argument("output_dir", type=click.STRING, required=False, default="logs")
-def report(dry_run, workbook_path, output_dir):
+def report(dry_run, wave, workbook_path, output_dir):
 
     workbook = get_workbook(workbook_path)
 
@@ -26,29 +27,27 @@ def report(dry_run, workbook_path, output_dir):
         output_dir = os.path.join(output_dir, "dry-run")
         target_column = "dry_run_target_name"
 
-    orgs = get_included_orgs(target_column, workbook_path)
+    orgs = get_included_orgs_by_wave(target_column, wave, workbook_path)
 
     ############################################################
     # Parse the GEI logs and generate the GEI migration reports
     ############################################################
-    (org_timings, repo_timings, repo_results) = generate_gei_reports(
-        orgs, workbook, output_dir
-    )
-    add_worksheet(workbook, "Org Timings", org_timings)
-    add_worksheet(workbook, "Repo Timings", repo_timings)
-    add_worksheet(workbook, "Repo Results", repo_results)
+    (org_timings, repo_timings, repo_results) = generate_gei_reports(orgs, output_dir)
+    add_worksheet(workbook, f"Org Timings-{wave}", org_timings)
+    add_worksheet(workbook, f"Repo Timings-{wave}", repo_timings)
+    add_worksheet(workbook, f"Repo Results-{wave}", repo_results)
 
     ############################################################
     # Parse the `gh migrate stats` results and report any
     # differences between the source and target orgs
     ############################################################
     stats = generate_stats_report(workbook, output_dir)
-    add_worksheet(workbook, "Post-Migration Report", stats)
+    add_worksheet(workbook, "Migration Report-{wave}", stats)
 
     workbook.save(workbook_path)
 
 
-def generate_gei_reports(orgs, workbook, logs_dir):
+def generate_gei_reports(orgs, logs_dir):
 
     org_timings = []
     repo_timings = []

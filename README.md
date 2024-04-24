@@ -142,7 +142,7 @@ source .env.pats
 ##########################################
 # Capture pre-migration source stats
 ##########################################
-gh migrate stats --before --source --dry-run --wave 1
+gh migrate stats --before --source --dry-run --wave 1 --pat ${source_pat}
 
 ##########################################
 # Migrate!
@@ -166,12 +166,12 @@ gh gei migrate-org \
 ##########################################
 # Capture post-migration source stats
 ##########################################
-gh migrate stats --after --source --dry-run --wave 1
+gh migrate stats --after --source --dry-run --wave 1 --pat ${source_pat}
 
 ##########################################
 # Capture post-migration target stats
 ##########################################
-gh migrate stats --after --target --dry-run --wave 1
+gh migrate stats --after --target --dry-run --wave 1 --pat ${target_pat}
 
 ##########################################
 # Get migration logs
