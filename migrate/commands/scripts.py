@@ -18,7 +18,10 @@ def render_template(template_name, output_name, **kwargs):
     Render a jinja2 template and write it to a file.
     """
     env = Environment(loader=FileSystemLoader("."))
-    template = env.get_template(os.path.join("scripts", "templates", template_name))
+
+    # TODO: Figure out why the first line doesn't work
+    # template = env.get_template(os.path.join("scripts", "templates", template_name))
+    template = env.get_template(f"./scripts/templates/{template_name}")
 
     # Render the template with the data
     output = template.render(source_pat="source_pat", target_pat="target_pat", **kwargs)
