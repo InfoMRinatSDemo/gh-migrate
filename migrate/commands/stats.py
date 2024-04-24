@@ -18,6 +18,7 @@ from ..workbook import get_included_orgs
 @click.option("--source", is_flag=True, help="Source organization(s)")
 @click.option("--target", is_flag=True, help="Target organization(s)")
 @click.option("--dry-run", is_flag=True, help="Is this a dry-run?")
+@click.option("--wave", type=int, help="Wave number", required=True)
 @click.option(
     "-w",
     "--workbook",
@@ -27,7 +28,9 @@ from ..workbook import get_included_orgs
 )
 @click.argument("output_dir", required=False, default="logs")
 @snapshot_before_after()
-def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, output_dir):
+def stats(
+    orgs, pat, before, after, source, target, dry_run, wave, workbook_path, output_dir
+):
     ##########################################
     # Check command line fslags
     ##########################################
@@ -40,13 +43,13 @@ def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, outp
     # Build output file name
     ##########################################
     if before and source:
-        output_file = "before-source.csv"
+        output_file = f"before-source-wave-{wave}.csv"
     elif before and target:
-        output_file = "before-target.csv"
+        output_file = f"before-target-wave-{wave}.csv"
     elif after and source:
-        output_file = "after-source.csv"
+        output_file = f"after-source-wave-{wave}.csv"
     elif after and target:
-        output_file = "after-target.csv"
+        output_file = f"after-target-wave-{wave}.csv"
 
     if dry_run:
         output_dir = os.path.join(output_dir, "dry-run")
@@ -88,7 +91,7 @@ def stats(orgs, pat, before, after, source, target, dry_run, workbook_path, outp
             if source:
                 process_org(github, "source", org, output_path)
             elif target:
-                process_org(github, "target", org, output_gath)
+                process_org(github, "target", org, output_path)
             else:
                 raise ValueError("Invalid source/target")
 

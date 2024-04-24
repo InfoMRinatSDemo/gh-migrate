@@ -142,7 +142,7 @@ source .env.pats
 ##########################################
 # Capture pre-migration source stats
 ##########################################
-gh migrate stats --before --source --dry-run
+gh migrate stats --before --source --dry-run --wave 1
 
 ##########################################
 # Migrate!
@@ -166,22 +166,22 @@ gh gei migrate-org \
 ##########################################
 # Capture post-migration source stats
 ##########################################
-gh migrate stats --after --source --dry-run
+gh migrate stats --after --source --dry-run --wave 1
 
 ##########################################
 # Capture post-migration target stats
 ##########################################
-gh migrate stats --after --target --dry-run
+gh migrate stats --after --target --dry-run --wave 1
 
 ##########################################
 # Get migration logs
 ##########################################
-gh migrate get logs --dry-run
+gh migrate get logs --dry-run --wave 1
 
 ##########################################
 # Generate post-migration report
 ##########################################
-gh migrate report --dry-run
+gh migrate report --dry-run --wave 1
 ```
 
 Before running the script, you must create an `.envs.pats` file containing the following:
@@ -193,9 +193,9 @@ export target_pat=<target pat>
 After the dry-run completes, the following files will be created:
 
 ```bash
-/logs/dry-run/before-source.csv
-/logs/dry-run/after-source.csv
-/logs/dry-run/after-target.csv
+/logs/dry-run/before-source-wave-1.csv
+/logs/dry-run/after-source-wave-1.csv
+/logs/dry-run/after-target-wave-1.csv
 /logs/dry-run/target-org1-DRYRUN
 /logs/dry-run/target-org2-DRYRUN
 ```

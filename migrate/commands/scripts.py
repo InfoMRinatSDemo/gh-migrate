@@ -70,6 +70,7 @@ def migration(workbook_path, dry_run):
                 target_slug="target_slug",
                 orgs=wave_orgs,
                 dry_run=True,
+                wave=wave,
             )
 
         else:
@@ -80,6 +81,7 @@ def migration(workbook_path, dry_run):
                 target_slug="target_slug",
                 orgs=wave_orgs,
                 dry_run=False,
+                wave=wave,
             )
 
     # checkpoint_file("./scripts/migration.sh", f"SCRIPTS: Saving new migration.sh")

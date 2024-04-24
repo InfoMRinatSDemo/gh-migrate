@@ -6,9 +6,9 @@ source .env.pats
 # Capture pre-migration source stats
 ##########################################
 {% if dry_run %}
-gh migrate stats --before --source --dry-run
+gh migrate stats --before --source --dry-run --wave {{ wave }}
 {% else %}
-gh migrate stats --before --source
+gh migrate stats --before --source --wave {{ wave }}
 {% endif %}
 
 ##########################################
@@ -32,34 +32,34 @@ gh gei migrate-org \
 # Capture post-migration source stats
 ##########################################
 {%- if dry_run %}
-gh migrate stats --after --source --dry-run
+gh migrate stats --after --source --dry-run --wave {{ wave }}
 {%- else %}
-gh migrate stats --after --source
+gh migrate stats --after --source --wave {{ wave }}
 {% endif %}
 
 ##########################################
 # Capture post-migration target stats
 ##########################################
 {%- if dry_run %}
-gh migrate stats --after --target --dry-run
+gh migrate stats --after --target --dry-run --wave {{ wave }}
 {%- else %}
-gh migrate stats --after --target
+gh migrate stats --after --target --wave {{ wave }}
 {% endif %}
 
 ##########################################
 # Get migration logs
 ##########################################
 {%- if dry_run %}
-gh migrate get logs --dry-run
+gh migrate get logs --dry-run --wave {{ wave }}
 {%- else %}
-gh migrate get logs
+gh migrate get logs --wave {{ wave }}
 {% endif %}
 
 ##########################################
 # Generate post-migration report
 ##########################################
 {%- if dry_run %}
-gh migrate report --dry-run
+gh migrate report --dry-run --wave {{ wave }}
 {%- else %}
-gh migrate report
+gh migrate report --wave {{ wave }}
 {% endif %}
