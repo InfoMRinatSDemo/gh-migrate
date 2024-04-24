@@ -60,7 +60,7 @@ def get_included_orgs_by_wave(org_type, wave, workbook_path):
     df = pd.DataFrame(data[1:], columns=data[0])
 
     # Get orgs for wave, filter out excluded orgs
-    orgs = df[df["exclude"] == False and df["wave"] == wave][org_type].tolist()
+    orgs = df[(df["exclude"] == False) & (df["wave"] == wave)][org_type].tolist()
 
     # If orgs is empty
     if orgs.empty:
