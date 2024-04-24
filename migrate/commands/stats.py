@@ -68,8 +68,6 @@ def stats(
             else:
                 orgs = get_included_orgs_by_wave("target_name", wave, workbook_path)
 
-    breakpoint()
-
     ##########################################
     # Housekeeping
     ##########################################
