@@ -52,8 +52,6 @@ def migration(workbook_path, dry_run, wave):
     Generate the migration script.
     """
 
-    # checkpoint_file(workbook_path, f"SCRIPTS: Saving old {workbook_path}")
-
     if dry_run:
         print(f"\n* Generating dry-run migration script for wave: {wave}")
         orgs = get_included_orgs_by_wave_df("dry_run_target_name", wave, workbook_path)
@@ -61,37 +59,28 @@ def migration(workbook_path, dry_run, wave):
         print(f"\n* Generating production migration script for wave: {wave}")
         orgs = get_included_orgs_by_wave_df("target_name", wave, workbook_path)
 
-    # Get the number of unique waves
-    waves = orgs["wave"].unique()
+    # Get the orgs for this wave
+    wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
 
-    # Create a migration script for each wave
-    for wave in waves:
-        # Get the orgs for this wave
-        wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
+    if dry_run:
+        render_template(
+            "migration.sh.j2",
+            f"wave-{wave}-migration-dry-run.sh",
+            target_slug="target_slug",
+            orgs=wave_orgs,
+            dry_run=True,
+            wave=wave,
+        )
 
-        if dry_run:
-            # checkpoint_file("./scripts/dry-run.sh", f"SCRIPTS: Saving old dry-run.sh")
-            render_template(
-                "migration.sh.j2",
-                f"wave-{wave}-migration-dry-run.sh",
-                target_slug="target_slug",
-                orgs=wave_orgs,
-                dry_run=True,
-                wave=wave,
-            )
-
-        else:
-            # checkpoint_file("./scripts/migration.sh", f"SCRIPTS: Saving old migration.sh")
-            render_template(
-                "migration.sh.j2",
-                f"wave-{wave}-migration-production.sh",
-                target_slug="target_slug",
-                orgs=wave_orgs,
-                dry_run=False,
-                wave=wave,
-            )
-
-    # checkpoint_file("./scripts/migration.sh", f"SCRIPTS: Saving new migration.sh")
+    else:
+        render_template(
+            "migration.sh.j2",
+            f"wave-{wave}-migration-production.sh",
+            target_slug="target_slug",
+            orgs=wave_orgs,
+            dry_run=False,
+            wave=wave,
+        )
 
 
 ##############################################################################
@@ -110,28 +99,36 @@ def migration(workbook_path, dry_run, wave):
 def post_migration(workbook_path, dry_run, wave):
     print("*** Generating post-migration scripts")
 
+    if dry_run:
+        print(f"* Generating dry-run post-migration script for wave: {wave}")
+        orgs = get_included_orgs_by_wave_df("dry_run_target_name", wave, workbook_path)
+        prefix = "DRY-RUN"
+    else:
+        print(f"* Generating production post-migration script for wave: {wave}")
+        orgs = get_included_orgs_by_wave_df("target_name", wave, workbook_path)
+        prefix = "PRODUCTION"
+
     ###############################
-    # Update team permissions
+    # Create post-migration scripts
     ###############################
-    def update_team_perms(source_org, target_org):
-        """
-        Generate the "update team permissions" script.
-        """
-        # Read in each of the source org's team-repos csv files
+
+    # Get the orgs for this wave
+    wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
+
+    for org in wave_orgs:
+        source_org = org["source_name"]
+        target_org = org["target_name"]
+
+        ###############################
+        # Update team permissions
+        ###############################
         team_repos_dir = os.path.join(
             "snapshots", "before", "source", source_org, "team-repos.csv"
         )
 
-        # Combine contents of all csv files into a single dataframe
         team_repos_df = pd.read_csv(team_repos_dir)
 
-        if dry_run:
-            output_file = f"DRY-RUN-wave-{int(wave)}-update-team-perms-{target_org}.sh"
-
-        else:
-            output_file = (
-                f"PRODUCTION-wave-{int(wave)}-update-team-perms-{target_org}.sh"
-            )
+        output_file = f"{prefix}-wave-{int(wave)}-update-team-perms-{target_org}.sh"
 
         render_template(
             "update-team-perms.sh.j2",
@@ -140,14 +137,9 @@ def post_migration(workbook_path, dry_run, wave):
             target_org=target_org,
         )
 
-    ###############################
-    # Add users to teams
-    ###############################
-    def add_users_to_teams(source_org, target_org):
-        """
-        Generate the "add users to teams" script.
-        """
-        # Read in each of the source org's team-users csv files
+        ###############################
+        # Add users to teams
+        ###############################
         team_users_file = os.path.join(
             "snapshots", "before", "source", source_org, "team-users.csv"
         )
@@ -175,12 +167,7 @@ def post_migration(workbook_path, dry_run, wave):
                 unmapped_users[["team_slug", "login", "mannequin-user", "target-user"]]
             )
 
-        if dry_run:
-            output_file = f"DRY-RUN-wave-{int(wave)}-add-users-to-teams-{target_org}.sh"
-        else:
-            output_file = (
-                f"PRODUCTION-wave-{int(wave)}-add-users-to-teams-{target_org}.sh"
-            )
+        output_file = f"{prefix}-wave-{int(wave)}-add-users-to-teams-{target_org}.sh"
 
         mapped_users = mapped_users[mapped_users["target-user"].notna()]
         render_template(
@@ -189,25 +176,6 @@ def post_migration(workbook_path, dry_run, wave):
             users=mapped_users.to_dict(orient="records"),
             target_org=target_org,
         )
-
-    if dry_run:
-        print(f"\n* Generating dry-run post-migration script for wave: {wave}")
-        orgs = get_included_orgs_by_wave_df("dry_run_target_name", wave, workbook_path)
-    else:
-        print(f"\n* Generating production post-migration script for wave: {wave}")
-        orgs = get_included_orgs_by_wave_df("target_name", wave, workbook_path)
-
-    # Get the number of unique waves
-    waves = orgs["wave"].unique()
-
-    # Create a migration script for each wave
-    for wave in waves:
-        # Get the orgs for this wave
-        wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
-
-        for org in wave_orgs:
-            update_team_perms(org["source_name"], org["target_name"])
-            add_users_to_teams(org["source_name"], org["target_name"])
 
     # repos = get_repos_by_exclude("exclude")
     # teams = get_teams_by_exclude("exclude")
@@ -222,76 +190,6 @@ def post_migration(workbook_path, dry_run, wave):
 #     Generate the "create teams" script.
 #     """
 #     render_template("step5-create-teams.sh.j2", teams=teams)
-
-
-# ###############################
-# # Update team permissions
-# ###############################
-# @scripts.command()
-# def update_team_perms():
-#     """
-#     Generate the "update team permissions" script.
-#     """
-#     # Read in each of the source org's team-repos csv files
-#     team_repos_dir = os.path.join(
-#         SNAPSHOTS_DIR, "initial", "source", SOURCE_ORG, "team-repos"
-#     )
-
-#     # Combine contents of all csv files into a single dataframe
-#     team_repos_df = pd.concat(
-#         [pd.read_csv(f) for f in glob.glob(os.path.join(team_repos_dir, "*.csv"))],
-#         ignore_index=True,
-#     )
-
-#     render_template(
-#         "step5-update-team-perms.sh.j2",
-#         repos=team_repos_df.to_dict(orient="records"),
-#     )
-
-
-# ###############################
-# # Add users to teams
-# ###############################
-# @scripts.command()
-# def add_users_to_teams():
-#     """
-#     Generate the "add users to teams" script.
-#     """
-#     # Read in each of the source org's team-users csv files
-#     team_users_dir = os.path.join(
-#         SNAPSHOTS_DIR, "initial", "source", SOURCE_ORG, "team-users"
-#     )
-
-#     # Combine contents of all csv files into a single dataframe
-#     team_users_df = pd.concat(
-#         [pd.read_csv(f) for f in glob.glob(os.path.join(team_users_dir, "*.csv"))],
-#         ignore_index=True,
-#     )
-
-#     # The mannequins file contains the mapping of mannequin-user to target-user
-#     mannequins_df = pd.read_csv(os.path.join(MAPPINGS_DIR, "mannequins.csv"))
-
-#     # Map the user from the source org to target org using mannequins.csv
-#     mapped_users = team_users_df.merge(
-#         # We use a left join so we can identify unmapped users
-#         # (they will be NaN in the "target-user" column)
-#         mannequins_df,
-#         how="left",
-#         left_on="login",
-#         right_on="mannequin-user",
-#     )
-
-#     # Identify unmapped users
-#     unmapped_users = mapped_users[mapped_users["target-user"].isna()]
-#     if not unmapped_users.empty:
-#         print(f"*** Couldn't map these users:")
-#         print(unmapped_users[["team_slug", "login", "mannequin-user", "target-user"]])
-
-#     mapped_users = mapped_users[mapped_users["target-user"].notna()]
-#     render_template(
-#         "step5-add-users-to-teams.sh.j2",
-#         users=mapped_users.to_dict(orient="records"),
-#     )
 
 
 # ###############################
