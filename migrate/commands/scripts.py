@@ -74,11 +74,23 @@ def migration(workbook_path, dry_run, wave):
     )
 
     ###############################
+    # Archive repos in orgs
+    ###############################
+    before_source_stats = pd.read_csv(f"./logs/before-source-wave-{int(wave)}.csv")
+    before_source_stats = before_source_stats[["name", "owner.login"]]
+
+    render_template(
+        "archive-repos-for-org.sh.j2",
+        f"{prefix}-wave-{wave}-archive-repos.sh",
+        repos=before_source_stats.to_dict(orient="records"),
+    )
+
+    ###############################
     # The actual migration script
     ###############################
     render_template(
         "migration.sh.j2",
-        f"wave-{wave}-migration-{prefix}.sh",
+        f"{prefix}-wave-{wave}-migration.sh",
         target_slug="target_slug",
         orgs=wave_orgs,
         dry_run=dry_run,
