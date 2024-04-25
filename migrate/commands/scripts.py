@@ -55,32 +55,35 @@ def migration(workbook_path, dry_run, wave):
     if dry_run:
         print(f"\n* Generating dry-run migration script for wave: {wave}")
         orgs = get_included_orgs_by_wave_df("dry_run_target_name", wave, workbook_path)
+        prefix = "DRY-RUN"
     else:
         print(f"\n* Generating production migration script for wave: {wave}")
         orgs = get_included_orgs_by_wave_df("target_name", wave, workbook_path)
+        prefix = "PRODUCTION"
 
     # Get the orgs for this wave
     wave_orgs = orgs[orgs["wave"] == wave].to_dict(orient="records")
 
-    if dry_run:
-        render_template(
-            "migration.sh.j2",
-            f"wave-{wave}-migration-dry-run.sh",
-            target_slug="target_slug",
-            orgs=wave_orgs,
-            dry_run=True,
-            wave=wave,
-        )
+    ###############################
+    # Add migration banner to orgs
+    ###############################
+    render_template(
+        "add-announcement-banner-to-orgs.sh.j2",
+        f"{prefix}-wave-{wave}-add-announcement-banner.sh",
+        orgs=wave_orgs,
+    )
 
-    else:
-        render_template(
-            "migration.sh.j2",
-            f"wave-{wave}-migration-production.sh",
-            target_slug="target_slug",
-            orgs=wave_orgs,
-            dry_run=False,
-            wave=wave,
-        )
+    ###############################
+    # The actual migration script
+    ###############################
+    render_template(
+        "migration.sh.j2",
+        f"wave-{wave}-migration-{prefix}.sh",
+        target_slug="target_slug",
+        orgs=wave_orgs,
+        dry_run=dry_run,
+        wave=wave,
+    )
 
 
 ##############################################################################
